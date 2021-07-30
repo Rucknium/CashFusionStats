@@ -21,7 +21,8 @@ ui <- shiny::navbarPage("CashFusion Stats",
   #    right = TRUE
   #  ), style="color:red;font-weight:bold;font-size:150%"),
     
-    shiny::plotOutput("line_chart"),
+    shiny::plotOutput("line_chart", height = "600px"),
+    
     #checkboxInput("fusion_friday", "Fusion Fridays!"),
     shiny::span(shinyWidgets::materialSwitch(
       inputId = "fusion_friday",
@@ -39,16 +40,24 @@ ui <- shiny::navbarPage("CashFusion Stats",
       width = "100%"),
     shiny::br(),
     shiny::br(),
+    shiny::br(),
+    shiny::br(),
+    shiny::br(),
+    shiny::h5("Click on column headers to sort the data table by column."),
+    shiny::h5("Click and drag column headers to rearrange columns."),
+    shiny::br(),
     DT::dataTableOutput("fusion_txs_table"),
     # https://stackoverflow.com/questions/24049159/change-the-color-and-font-of-text-in-shiny-app
     shiny::br(),
     shiny::br(),
+    shiny::h5(shiny::HTML("<a href=\"https://github.com/Rucknium/CashFusionStats/tree/main/data\">Data available here</a>")),
     shiny::h5(shiny::HTML("<a href=\"https://github.com/Rucknium/CashFusionStats\">Code available here</a>")),
     shiny::br(),
     shiny::br()
   )
   
 )
+
 
 
 
