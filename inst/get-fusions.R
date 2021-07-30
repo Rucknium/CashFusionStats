@@ -66,23 +66,8 @@ for (iter.block.height in first.fusion.height:current.block.height) {
 fused.all.df <- do.call(rbind, fused.all.ls)
 str(fused.all.df)
 
-fused.all.df$block.time <- NA
-
-for ( iter.block.height in unique(fused.all.df$block.height)) {
-  
-  block.hash <- rbtc::rpcpost(bch.config, "getblockhash", list(iter.block.height))
-  block.data <- rbtc::rpcpost(bch.config, "getblock", list(block.hash@result, 1))
-  fused.all.df$block.time[fused.all.df$block.height == iter.block.height] <- 
-    as.POSIXct(block.data@result$time,  origin = "1970-01-01", tz = "GMT")
-
-}
-
-fused.all.df$block.time <- as.POSIXct(fused.all.df$block.time,  origin = "1970-01-01", tz = "GMT")
-
 
 saveRDS(fused.all.df, file = "~/pre-git/fusionstats/fusions_df_original.rds", compress = FALSE)
-
-
 
 
 fusions.df <- readRDS("~/pre-git/fusionstats/fusions_df_original.rds")
@@ -93,6 +78,7 @@ fusions.df$txid.link <- paste0("<a href=\"https://explorer.bitcoin.com/bch/tx/",
   fusions.df$txid, "\">", substr(fusions.df$txid, 1, 8), "</a>")
 fusions.df$block.date <- lubridate::date(fusions.df$block.time.orig)
 saveRDS(fusions.df, file = "~/pre-git/fusionstats/fusions_df.rds", compress = FALSE)
+write.csv(fusions.df, file = "~/pre-git/fusionstats/fusions_df.csv", row.names = FALSE)
 
 
 # https://rawgit.com/rstudio/cheatsheets/master/lubridate.pdf
@@ -102,10 +88,15 @@ fusions.date.agg.holes <- data.frame(Date = seq(min(fusions.date.agg$Date), max(
 fusions.date.agg.holes$Date <- as.POSIXct(as.character(lubridate::date(fusions.date.agg.holes$Date)))
 fusions.date.agg <- merge(fusions.date.agg, fusions.date.agg.holes, all = TRUE)
 fusions.date.agg$Freq[is.na(fusions.date.agg$Freq)] <- 0
+fusions.date.agg$moving.average.7.day <- NA
+fusions.date.agg$moving.average.7.day[4:(nrow(fusions.date.agg) - 3)] <- zoo::rollapply(fusions.date.agg$Freq, 7, mean)
+# Here, center the moving average; don't lag it.
+# https://koalatea.io/r-moving-average/
 fusions.date.agg <- fusions.date.agg[order(fusions.date.agg$Date, decreasing = FALSE), ]
+
 saveRDS(fusions.date.agg, file = "~/pre-git/fusionstats/fusions_date_agg.rds", compress = FALSE)
+write.csv(fusions.date.agg, file = "~/pre-git/fusionstats/fusions_date_agg.csv", row.names = FALSE)
 
 
 # https://bitcoin.stackexchange.com/questions/41749/get-transaction-fees-per-transaction-via-gettransaction?rq=1
 # "Unfortunately, you'll have to look up all the inputs and see how much is in them in order to calculate the transaction fee using this method."
-
