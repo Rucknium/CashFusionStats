@@ -25,9 +25,9 @@ server <- function(input, output, session) {
   })
   
   output$line_chart <- shiny::renderPlot({
-    
     fusions.date.agg.temp <- fusions.date.agg[
-      input$line_plot_date_range[1] <= fusions.date.agg$Date & fusions.date.agg$Date <= input$line_plot_date_range[2], ]
+      input$line_plot_date_range[1] <= as.Date(fusions.date.agg$Date) & 
+        as.Date(fusions.date.agg$Date) <= input$line_plot_date_range[2], ]
 
     plot(fusions.date.agg.temp$Date, fusions.date.agg.temp$Freq, type = "n",
       ylim = c(0, max(fusions.date.agg.temp$Freq)),
