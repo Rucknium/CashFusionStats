@@ -4,17 +4,17 @@ server <- function(input, output, session) {
   
   thematic::thematic_shiny(font = "auto")
   
-  light <- bslib::bs_theme(bootswatch = "cerulean")
+ # light <- bslib::bs_theme(bootswatch = "cerulean")
   #dark <- bslib::bs_theme(bg = "black", fg = "white", primary = "purple")
-  dark <- bslib::bs_theme(bootswatch = "darkly")
-  shiny::observe(session$setCurrentTheme(
-    if (isTRUE(input$dark_mode)) {dark} else {light}
-  ))
+ # dark <- bslib::bs_theme(bootswatch = "darkly")
+ # shiny::observe(session$setCurrentTheme(
+ #   if (isTRUE(input$dark_mode)) {dark} else {light}
+ # ))
   # https://rstudio.github.io/bslib/articles/bslib.html#dynamic-theming
   
   
-  fusions.df <- readRDS("~/pre-git/fusionstats/fusions_df.rds")
-  fusions.date.agg <- readRDS("~/pre-git/fusionstats/fusions_date_agg.rds")
+  fusions.df <- readRDS("data/fusions_df.rds")
+  fusions.date.agg <- readRDS("data/fusions_date_agg.rds")
   
   output$n_fusions_text <- shiny::renderText({
     paste0(prettyNum(nrow(fusions.df), big.mark = ","),  " CashFusions")

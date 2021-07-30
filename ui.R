@@ -14,12 +14,12 @@ ui <- shiny::navbarPage("CashFusion Stats",
     shiny::br(),
     shiny::br(),
   # span(shiny::checkboxInput("dark_mode", ("Dark mode")), style="color:red;font-weight:bold;font-size:150%"),
-    shiny::span(shinyWidgets::materialSwitch(
-      inputId = "dark_mode",
-      label = "Dark mode", 
-      status = "primary",
-      right = TRUE
-    ), style="color:red;font-weight:bold;font-size:150%"),
+  #  shiny::span(shinyWidgets::materialSwitch(
+  #    inputId = "dark_mode",
+  #    label = "Dark mode", 
+  #    status = "primary",
+  #    right = TRUE
+  #  ), style="color:red;font-weight:bold;font-size:150%"),
     
     shiny::plotOutput("line_chart"),
     #checkboxInput("fusion_friday", "Fusion Fridays!"),
