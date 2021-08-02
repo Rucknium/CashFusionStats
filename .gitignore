@@ -1,3 +1,11 @@
+*.tws
+.DS_Store
+scratch.R
+
+
+# R gitignore template from https://github.com/github/gitignore/blob/master/R.gitignore
+# And added *.Rproj and .Rbuildignore
+
 # History files
 .Rhistory
 .Rapp.history
@@ -19,6 +27,8 @@
 
 # RStudio files
 .Rproj.user/
+*.Rproj
+.Rbuildignore
 
 # produced vignettes
 vignettes/*.html
@@ -37,3 +47,9 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# pkgdown site
+docs/
+
+# translation temp files
+po/*~
