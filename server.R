@@ -1,11 +1,18 @@
 
 
+fusion.polished.data.dir <- "data/"
+# MUST have trailing /
+
+fusions.summary.ls <- readRDS("data/fusions_summary_ls.rds")
+fusions.date.agg <- readRDS(paste0(fusion.polished.data.dir, "fusions_date_agg.rds"))
+fusions.df <- readRDS(paste0(fusion.polished.data.dir, "fusions_df.rds"))
+
+
+
 server <- function(input, output, session) {
   
   thematic::thematic_shiny(font = "auto")
-  
-  fusion.polished.data.dir <- "data/"
-  # MUST have trailing /
+
 
   
  # light <- bslib::bs_theme(bootswatch = "cerulean")
@@ -18,8 +25,6 @@ server <- function(input, output, session) {
   
 
   
-  fusions.summary.ls <- readRDS("data/fusions_summary_ls.rds")
-  
   output$n_fusions_text <- shiny::renderText({
     paste0(prettyNum(fusions.summary.ls$n.fusions, big.mark = ","),  " CashFusions")
   })
@@ -27,8 +32,6 @@ server <- function(input, output, session) {
   output$n_bch_text <- shiny::renderText({
     paste0(prettyNum(fusions.summary.ls$n.bch, big.mark = ","),  " BCH")
   })
-  
-  fusions.date.agg <- readRDS(paste0(fusion.polished.data.dir, "fusions_date_agg.rds"))
   
   output$line_chart <- shiny::renderPlot({
     fusions.date.agg.temp <- fusions.date.agg[
@@ -76,8 +79,6 @@ server <- function(input, output, session) {
     par(mar = c(5, 4, 4, 2) + 0.1) #, mgp = c(3, 1, 0))
     
   })
-  
-  fusions.df <- readRDS(paste0(fusion.polished.data.dir, "fusions_df.rds"))
   
   output$fusion_txs_table <- DT::renderDataTable({
     fusions.df[, c("block.height", "block.time",  "txid.link", "value", 

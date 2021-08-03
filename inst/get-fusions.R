@@ -195,11 +195,16 @@ fusions.summary.ls <- list(n.fusions = nrow(fusions.df), n.bch = sum(fusions.df$
 
 saveRDS(fusions.summary.ls, file = paste0(fusion.polished.data.dir, "fusions_summary_ls.rds"), compress = FALSE)
 
-
-
+# NOTE: readRDS() with compress = FALSE loads twice as fast as with compress = TRUE. 0.25 secs vs 0.5 secs
 
 #saveRDS(fusions.date.agg, file = "data/fusions_date_agg.rds", compress = FALSE)
 #write.csv(fusions.date.agg, file = "data/fusions_date_agg.csv", row.names = FALSE)
+
+# Store the data frame to disk
+# fst::write.fst(fusions.df, "dataset.fst", compress = 50)
+
+# Retrieve the data frame again
+# system.time(test <- fst::read.fst("dataset.fst"))
 
 
 # https://bitcoin.stackexchange.com/questions/41749/get-transaction-fees-per-transaction-via-gettransaction?rq=1
