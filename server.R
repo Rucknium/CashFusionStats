@@ -67,8 +67,14 @@ server <- function(input, output, session) {
         , col = "#1b98e0" # , xpd = TRUE
       )
       
-      lines(fusions.date.agg.temp$Date, fusions.date.agg.temp$moving.average.7.day, lwd = 2) # , col = "black"
-      legend("topleft", legend = "7-day moving average", lty = 1, lwd = 2)
+      lines(fusions.date.agg.temp$Date, fusions.date.agg.temp$moving.average.7.day, lwd = 2, col = "black")
+      legend("topleft", 
+        legend = c("7-day moving average", "Official release date"),
+        col = c("black", "red"),
+        lwd = c(2, 2),
+        lty = c(1, 2))
+      
+      abline(v = fusions.summary.ls$full.release, col = "red", lwd = 2, lty = 2)
       
       if (input$fusion_friday) {
         fusions.date.agg.temp.friday <- fusions.date.agg.temp[lubridate::wday(fusions.date.agg.temp$Date) == 6, ]

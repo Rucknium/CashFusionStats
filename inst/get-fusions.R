@@ -173,9 +173,9 @@ write.csv(fusions.df, file = paste0(fusion.polished.data.dir, "fusions_df.csv"),
 
 # https://rawgit.com/rstudio/cheatsheets/master/lubridate.pdf
 fusions.date.agg <- as.data.frame.table(table(Date = fusions.df$block.date))
-fusions.date.agg$Date <- as.POSIXct(as.character(fusions.date.agg$Date))
+fusions.date.agg$Date <- as.POSIXct(as.character(fusions.date.agg$Date), tz = "GMT")
 fusions.date.agg.holes <- data.frame(Date = seq(min(fusions.date.agg$Date), max(fusions.date.agg$Date), "days"))
-fusions.date.agg.holes$Date <- as.POSIXct(as.character(lubridate::date(fusions.date.agg.holes$Date)))
+fusions.date.agg.holes$Date <- as.POSIXct(as.character(lubridate::date(fusions.date.agg.holes$Date)), tz = "GMT")
 fusions.date.agg <- merge(fusions.date.agg, fusions.date.agg.holes, all = TRUE)
 fusions.date.agg$Freq[is.na(fusions.date.agg$Freq)] <- 0
 fusions.date.agg$moving.average.7.day <- NA
@@ -191,7 +191,12 @@ write.csv(fusions.date.agg, file = paste0(fusion.raw.data.dir, "fusions_date_agg
 saveRDS(fusions.date.agg, file = paste0(fusion.polished.data.dir, "fusions_date_agg.rds"), compress = FALSE)
 write.csv(fusions.date.agg, file = paste0(fusion.polished.data.dir, "fusions_date_agg.csv"), row.names = FALSE)
 
-fusions.summary.ls <- list(n.fusions = nrow(fusions.df), n.bch = sum(fusions.df$value, na.rm = TRUE))
+fusions.summary.ls <- list(
+  n.fusions = nrow(fusions.df), 
+  n.bch = sum(fusions.df$value, na.rm = TRUE),
+  full.release = as.POSIXct("2020-07-30", tz = "GMT")
+  # https://github.com/Electron-Cash/Electron-Cash/releases/tag/4.1.0
+  )
 
 saveRDS(fusions.summary.ls, file = paste0(fusion.polished.data.dir, "fusions_summary_ls.rds"), compress = FALSE)
 
