@@ -141,7 +141,7 @@ if (length(fused.update.df) > 0) {
   fusions.df <- unique(rbind(fusions.df, fused.update.df))
 }
 
-saveRDS(fusions.df, file = paste0("data/fusions_df_original_height_", 
+saveRDS(fusions.df, file = paste0(fusion.raw.data.dir, "fusions_df_original_height_", 
   max(fusions.df$block.height), ".rds"), compress = FALSE)
 
 # system.time(DT::datatable(fusions.df))
@@ -190,6 +190,13 @@ write.csv(fusions.date.agg, file = paste0(fusion.raw.data.dir, "fusions_date_agg
   max(fusions.df$block.height), ".csv"), row.names = FALSE)
 saveRDS(fusions.date.agg, file = paste0(fusion.polished.data.dir, "fusions_date_agg.rds"), compress = FALSE)
 write.csv(fusions.date.agg, file = paste0(fusion.polished.data.dir, "fusions_date_agg.csv"), row.names = FALSE)
+
+fusions.summary.ls <- list(n.fusions = nrow(fusions.df), n.bch = sum(fusions.df$value, na.rm = TRUE))
+
+saveRDS(fusions.summary.ls, file = paste0(fusion.polished.data.dir, "fusions_summary_ls.rds"), compress = FALSE)
+
+
+
 
 #saveRDS(fusions.date.agg, file = "data/fusions_date_agg.rds", compress = FALSE)
 #write.csv(fusions.date.agg, file = "data/fusions_date_agg.csv", row.names = FALSE)

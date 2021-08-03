@@ -4,8 +4,9 @@ server <- function(input, output, session) {
   
   thematic::thematic_shiny(font = "auto")
   
-  fusions.df <- readRDS("data/fusions_df.rds")
-  fusions.date.agg <- readRDS("data/fusions_date_agg.rds")
+  fusion.polished.data.dir <- "data/"
+  # MUST have trailing /
+
   
  # light <- bslib::bs_theme(bootswatch = "cerulean")
   #dark <- bslib::bs_theme(bg = "black", fg = "white", primary = "purple")
@@ -17,13 +18,17 @@ server <- function(input, output, session) {
   
 
   
+  fusions.summary.ls <- readRDS("data/fusions_summary_ls.rds")
+  
   output$n_fusions_text <- shiny::renderText({
-    paste0(prettyNum(nrow(fusions.df), big.mark = ","),  " CashFusions")
+    paste0(prettyNum(fusions.summary.ls$n.fusions, big.mark = ","),  " CashFusions")
   })
   
   output$n_bch_text <- shiny::renderText({
-    paste0(prettyNum(sum(fusions.df$value, na.rm = TRUE), big.mark = ","),  " BCH")
+    paste0(prettyNum(fusions.summary.ls$n.bch, big.mark = ","),  " BCH")
   })
+  
+  fusions.date.agg <- readRDS(paste0(fusion.polished.data.dir, "fusions_date_agg.rds"))
   
   output$line_chart <- shiny::renderPlot({
     fusions.date.agg.temp <- fusions.date.agg[
@@ -64,13 +69,15 @@ server <- function(input, output, session) {
       mtext(paste("CashFusions/day overall mean: ",
         round(mean(fusions.date.agg.temp$Freq), digits = 1),
         " | Friday mean: ", round(mean(fusions.date.agg.temp.friday$Freq, na.rm = TRUE), digits = 1)
-        ), col = "red")
+        ), col = "red", line = 0.25)
       
     }
     
     par(mar = c(5, 4, 4, 2) + 0.1) #, mgp = c(3, 1, 0))
     
   })
+  
+  fusions.df <- readRDS(paste0(fusion.polished.data.dir, "fusions_df.rds"))
   
   output$fusion_txs_table <- DT::renderDataTable({
     fusions.df[, c("block.height", "block.time",  "txid.link", "value", 
