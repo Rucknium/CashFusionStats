@@ -1,6 +1,7 @@
 *.tws
 .DS_Store
 scratch.R
+data-raw
 
 
 # R gitignore template from https://github.com/github/gitignore/blob/master/R.gitignore
