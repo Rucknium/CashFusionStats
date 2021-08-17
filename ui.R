@@ -53,7 +53,15 @@ ui <- shiny::navbarPage("CashFusion Stats",
     shiny::h5(shiny::HTML("<u><a href=\"https://github.com/Rucknium/CashFusionStats/tree/main/data\">Data available here</a></u>")),
     shiny::h5(shiny::HTML("<u><a href=\"https://github.com/Rucknium/CashFusionStats\">Code available here</a></u>")),
     shiny::br(),
+    shiny::br(),
+    shiny::h5("CashFusion Stats is a project of the CashFusion Red Team"),
+    shiny::br(),
+    shiny::HTML("<img src=\"/images/logos/CashFusion-Red-Team-logo-1000-by-200.png\" width=\"100%\" />"),
+    # Must have images in the www directory
+    shiny::br(),
+    shiny::br(),
     shiny::br()
+
   )
   
 )
