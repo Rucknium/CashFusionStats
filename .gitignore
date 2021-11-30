@@ -2,6 +2,7 @@
 .DS_Store
 scratch.R
 data-raw
+data
 app_cache
 
 # R gitignore template from https://github.com/github/gitignore/blob/master/R.gitignore
