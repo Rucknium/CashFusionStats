@@ -18,16 +18,19 @@ server <- function(input, output, session) {
   thematic::thematic_shiny(font = "auto")
   
   
-  fusions.summary.ls <- shiny::reactiveFileReader(60000, session, 
+  fusions.summary.ls_fn <- shiny::reactiveFileReader(60000, session, 
     filePath = paste0(fusion.polished.data.dir, "fusions_summary_ls.rds"), readFunc = readRDS)
   # Poll every 60 seconds
   
-  fusions.date.agg <- shiny::reactiveFileReader(60000, session, 
+  fusions.date.agg_fn <- shiny::reactiveFileReader(60000, session, 
     filePath = paste0(fusion.polished.data.dir, "fusions_date_agg.rds"), readFunc = readRDS)
   
-  fusions.df <- shiny::reactiveFileReader(60000, session, 
+  fusions.df_fn <- shiny::reactiveFileReader(60000, session, 
     filePath = paste0(fusion.polished.data.dir, "fusions_df.rds"), readFunc = readRDS)
 
+  fusions.summary.ls <- shiny::reactive({fusions.summary.ls_fn})
+  fusions.date.agg <- shiny::reactive({fusions.date.agg_fn})
+  fusions.df <- shiny::reactive({fusions.df_fn})
 
   
  # light <- bslib::bs_theme(bootswatch = "cerulean")

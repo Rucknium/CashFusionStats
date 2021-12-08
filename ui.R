@@ -45,7 +45,7 @@ ui <- shiny::navbarPage("CashFusion Stats",
     shiny::br(),
     shiny::h6("👇 Click on column headers to sort the data table by column."),
     shiny::h6("👇 Click and drag column headers to rearrange columns."),
-    shiny::h4("NOTE: For the time being, the data is updated manually by CashFusion Red Team, so the data shown here may be slightly out-of-date. Automatic data updates is a planned feature."),
+    # shiny::h4("NOTE: For the time being, the data is updated manually by CashFusion Red Team, so the data shown here may be slightly out-of-date. Automatic data updates is a planned feature."),
     shiny::br(),
     DT::dataTableOutput("fusion_txs_table"),
     # https://stackoverflow.com/questions/24049159/change-the-color-and-font-of-text-in-shiny-app
