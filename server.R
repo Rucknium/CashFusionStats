@@ -7,9 +7,9 @@ shinyOptions(cache = cachem::cache_disk("./app_cache/cache/"))
 fusion.polished.data.dir <- "data/"
 # MUST have trailing /
 
-fusions.summary.ls <- readRDS(paste0(fusion.polished.data.dir, "fusions_summary_ls.rds"))
-fusions.date.agg <- readRDS(paste0(fusion.polished.data.dir, "fusions_date_agg.rds"))
-fusions.df <- readRDS(paste0(fusion.polished.data.dir, "fusions_df.rds"))
+# fusions.summary.ls <- readRDS(paste0(fusion.polished.data.dir, "fusions_summary_ls.rds"))
+# fusions.date.agg <- readRDS(paste0(fusion.polished.data.dir, "fusions_date_agg.rds"))
+# fusions.df <- readRDS(paste0(fusion.polished.data.dir, "fusions_df.rds"))
 
 
 
@@ -44,18 +44,18 @@ server <- function(input, output, session) {
 
   
   output$n_fusions_text <- shiny::renderText({
-    paste0(prettyNum(fusions.summary.ls$n.fusions, big.mark = ","),  " CashFusions")
+    paste0(prettyNum(fusions.summary.ls()$n.fusions, big.mark = ","),  " CashFusions")
   })
   
   output$n_bch_text <- shiny::renderText({
-    paste0(prettyNum(fusions.summary.ls$n.bch, big.mark = ","),  " BCH")
+    paste0(prettyNum(fusions.summary.ls()$n.bch, big.mark = ","),  " BCH")
   })
   
   output$line_chart <- shiny::bindCache( {
     shiny::renderPlot({
-      fusions.date.agg.temp <- fusions.date.agg[
-        input$line_plot_date_range[1] <= as.Date(fusions.date.agg$Date) & 
-          as.Date(fusions.date.agg$Date) <= input$line_plot_date_range[2], ]
+      fusions.date.agg.temp <- fusions.date.agg()[
+        input$line_plot_date_range[1] <= as.Date(fusions.date.agg()$Date) & 
+          as.Date(fusions.date.agg()$Date) <= input$line_plot_date_range[2], ]
       
       par(mar = c(8, 4, 4, 2) + 0.1)
       # c(bottom, left, top, right)
@@ -88,7 +88,7 @@ server <- function(input, output, session) {
         lwd = c(2, 2),
         lty = c(1, 2))
       
-      abline(v = fusions.summary.ls$full.release, col = "red", lwd = 2, lty = 2)
+      abline(v = fusions.summary.ls()$full.release, col = "red", lwd = 2, lty = 2)
       
       if (input$fusion_friday) {
         fusions.date.agg.temp.friday <- fusions.date.agg.temp[lubridate::wday(fusions.date.agg.temp$Date) == 6, ]
@@ -107,7 +107,7 @@ server <- function(input, output, session) {
   }, input$line_plot_date_range, input$fusion_friday )
   
   output$fusion_txs_table <- DT::renderDataTable({
-    fusions.df[, c("block.height", "block.time",  "txid.link", "value", 
+    fusions.df()[, c("block.height", "block.time",  "txid.link", "value", 
       "n.inputs", "n.outputs", "size", "txid", "block.time.orig",  "block.date" )]},
     # WARNING: If The above columns are changed, must also change "targets =" below
     rownames = FALSE,
