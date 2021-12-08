@@ -7,7 +7,7 @@ shinyOptions(cache = cachem::cache_disk("./app_cache/cache/"))
 fusion.polished.data.dir <- "data/"
 # MUST have trailing /
 
-fusions.summary.ls <- readRDS("data/fusions_summary_ls.rds")
+fusions.summary.ls <- readRDS(paste0(fusion.polished.data.dir, "fusions_summary_ls.rds"))
 fusions.date.agg <- readRDS(paste0(fusion.polished.data.dir, "fusions_date_agg.rds"))
 fusions.df <- readRDS(paste0(fusion.polished.data.dir, "fusions_df.rds"))
 
@@ -16,6 +16,17 @@ fusions.df <- readRDS(paste0(fusion.polished.data.dir, "fusions_df.rds"))
 server <- function(input, output, session) {
   
   thematic::thematic_shiny(font = "auto")
+  
+  
+  fusions.summary.ls <- shiny::reactiveFileReader(60000, session, 
+    filePath = paste0(fusion.polished.data.dir, "fusions_summary_ls.rds"), readFunc = readRDS)
+  # Poll every 60 seconds
+  
+  fusions.date.agg <- shiny::reactiveFileReader(60000, session, 
+    filePath = paste0(fusion.polished.data.dir, "fusions_date_agg.rds"), readFunc = readRDS)
+  
+  fusions.df <- shiny::reactiveFileReader(60000, session, 
+    filePath = paste0(fusion.polished.data.dir, "fusions_df.rds"), readFunc = readRDS)
 
 
   
