@@ -3,6 +3,9 @@
 # bitcoind MUST be running with the transaction index enabled:
 # Set txindex=1 in bitcoin.conf, or -txindex when invoking bitcoind on the command line
 
+
+while (TRUE) {
+
 # install.packages("rbtc")
 library(rbtc)
 bch.config <- rbtc::conrpc("~/config-files/bitcoin.conf")
@@ -71,47 +74,51 @@ for (iter.block.height in last.updated.fusion.height:current.block.height) {
 fused.update.df <- do.call(rbind, fused.update.ls)
 
 if (nrow(fused.update.df) > 0) {
-
-fused.update.df$block.time.orig <- fused.update.df$block.time
-fused.update.df$block.time <- as.character(fused.update.df$block.time)
-fused.update.df$txid.link <- paste0("<a href=\"https://explorer.bitcoin.com/bch/tx/", 
-  fused.update.df$txid, "\">", substr(fused.update.df$txid, 1, 8), "</a>")
-fused.update.df$block.date <- lubridate::date(fused.update.df$block.time.orig)
-
-fusions.df <- unique(rbind(fusions.df, fused.update.df))
-fusions.df <- fusions.df[order(fusions.df$block.height, decreasing = TRUE), ]
-
+  
+  fused.update.df$block.time.orig <- fused.update.df$block.time
+  fused.update.df$block.time <- as.character(fused.update.df$block.time)
+  fused.update.df$txid.link <- paste0("<a href=\"https://explorer.bitcoin.com/bch/tx/", 
+    fused.update.df$txid, "\">", substr(fused.update.df$txid, 1, 8), "</a>")
+  fused.update.df$block.date <- lubridate::date(fused.update.df$block.time.orig)
+  
+  fusions.df <- unique(rbind(fusions.df, fused.update.df))
+  fusions.df <- fusions.df[order(fusions.df$block.height, decreasing = TRUE), ]
+  
+  saveRDS(fusions.df, file = paste0(fusion.polished.data.dir, "fusions_df.rds"), compress = FALSE)
+  write.csv(fusions.df, file = paste0(fusion.polished.data.dir, "fusions_df.csv"), row.names = FALSE)
+  
+  # https://rawgit.com/rstudio/cheatsheets/master/lubridate.pdf
+  fusions.date.agg <- as.data.frame.table(table(Date = fusions.df$block.date))
+  fusions.date.agg$Date <- as.POSIXct(as.character(fusions.date.agg$Date), tz = "GMT")
+  fusions.date.agg.holes <- data.frame(Date = seq(min(fusions.date.agg$Date), max(fusions.date.agg$Date), "days"))
+  fusions.date.agg.holes$Date <- as.POSIXct(as.character(lubridate::date(fusions.date.agg.holes$Date)), tz = "GMT")
+  fusions.date.agg <- merge(fusions.date.agg, fusions.date.agg.holes, all = TRUE)
+  fusions.date.agg$Freq[is.na(fusions.date.agg$Freq)] <- 0
+  fusions.date.agg$moving.average.7.day <- NA
+  fusions.date.agg$moving.average.7.day[4:(nrow(fusions.date.agg) - 3)] <- zoo::rollapply(fusions.date.agg$Freq, 7, mean)
+  # Here, center the moving average; don't lag it.
+  # https://koalatea.io/r-moving-average/
+  fusions.date.agg <- fusions.date.agg[order(fusions.date.agg$Date, decreasing = FALSE), ]
+  
+  saveRDS(fusions.date.agg, file = paste0(fusion.polished.data.dir, "fusions_date_agg.rds"), compress = FALSE)
+  write.csv(fusions.date.agg, file = paste0(fusion.polished.data.dir, "fusions_date_agg.csv"), row.names = FALSE)
+  
+  fusions.summary.ls <- list(
+    n.fusions = nrow(fusions.df), 
+    n.bch = sum(fusions.df$value, na.rm = TRUE),
+    full.release = as.POSIXct("2020-07-30", tz = "GMT")
+    # https://github.com/Electron-Cash/Electron-Cash/releases/tag/4.1.0
+  )
+  
+  saveRDS(fusions.summary.ls, file = paste0(fusion.polished.data.dir, "fusions_summary_ls.rds"), compress = FALSE)
+  
 }
 
 
+Sys.sleep(5 * 60)
 
-saveRDS(fusions.df, file = paste0(fusion.polished.data.dir, "fusions_df.rds"), compress = FALSE)
-write.csv(fusions.df, file = paste0(fusion.polished.data.dir, "fusions_df.csv"), row.names = FALSE)
+}
 
-# https://rawgit.com/rstudio/cheatsheets/master/lubridate.pdf
-fusions.date.agg <- as.data.frame.table(table(Date = fusions.df$block.date))
-fusions.date.agg$Date <- as.POSIXct(as.character(fusions.date.agg$Date), tz = "GMT")
-fusions.date.agg.holes <- data.frame(Date = seq(min(fusions.date.agg$Date), max(fusions.date.agg$Date), "days"))
-fusions.date.agg.holes$Date <- as.POSIXct(as.character(lubridate::date(fusions.date.agg.holes$Date)), tz = "GMT")
-fusions.date.agg <- merge(fusions.date.agg, fusions.date.agg.holes, all = TRUE)
-fusions.date.agg$Freq[is.na(fusions.date.agg$Freq)] <- 0
-fusions.date.agg$moving.average.7.day <- NA
-fusions.date.agg$moving.average.7.day[4:(nrow(fusions.date.agg) - 3)] <- zoo::rollapply(fusions.date.agg$Freq, 7, mean)
-# Here, center the moving average; don't lag it.
-# https://koalatea.io/r-moving-average/
-fusions.date.agg <- fusions.date.agg[order(fusions.date.agg$Date, decreasing = FALSE), ]
-
-saveRDS(fusions.date.agg, file = paste0(fusion.polished.data.dir, "fusions_date_agg.rds"), compress = FALSE)
-write.csv(fusions.date.agg, file = paste0(fusion.polished.data.dir, "fusions_date_agg.csv"), row.names = FALSE)
-
-fusions.summary.ls <- list(
-  n.fusions = nrow(fusions.df), 
-  n.bch = sum(fusions.df$value, na.rm = TRUE),
-  full.release = as.POSIXct("2020-07-30", tz = "GMT")
-  # https://github.com/Electron-Cash/Electron-Cash/releases/tag/4.1.0
-)
-
-saveRDS(fusions.summary.ls, file = paste0(fusion.polished.data.dir, "fusions_summary_ls.rds"), compress = FALSE)
 
 # NOTE: readRDS() with compress = FALSE loads twice as fast as with compress = TRUE. 0.25 secs vs 0.5 secs
 
