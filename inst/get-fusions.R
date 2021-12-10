@@ -3,9 +3,10 @@
 # bitcoind MUST be running with the transaction index enabled:
 # Set txindex=1 in bitcoin.conf, or -txindex when invoking bitcoind on the command line
 
-# install.packages("rbtc")
-library(rbtc)
-bch.config <- rbtc::conrpc("~/.bitcoin/bitcoin.conf")
+# install.packages("devtools")
+# devtools::install_github("Rucknium/rbch")
+library(rbch)
+bch.config <- rbch::conrpc("~/.bitcoin/bitcoin.conf")
 # Path to bitcoind config file. The file must contain, at a minimum:
 # testnet=0
 # rpcuser=<userhere>
@@ -15,7 +16,7 @@ bch.config <- rbtc::conrpc("~/.bitcoin/bitcoin.conf")
 # https://docs.bitcoincashnode.org/doc/json-rpc/getblock.html
 # https://docs.bitcoincashnode.org/doc/json-rpc/getrawtransaction.html
 
-current.block.height <- rbtc::rpcpost(bch.config, "getblockchaininfo", list())@result$blocks
+current.block.height <- rbch::rpcpost(bch.config, "getblockchaininfo", list())@result$blocks
 # 698417
 fused.all.ls <- vector("list", length = current.block.height)
 
@@ -29,8 +30,8 @@ for (iter.block.height in first.fusion.height:current.block.height) {
     cat(iter.block.height, base::date(), "\n")
   }
   
-  block.hash <- rbtc::rpcpost(bch.config, "getblockhash", list(iter.block.height))
-  block.data <- rbtc::rpcpost(bch.config, "getblock", list(block.hash@result, 2))
+  block.hash <- rbch::rpcpost(bch.config, "getblockhash", list(iter.block.height))
+  block.data <- rbch::rpcpost(bch.config, "getblock", list(block.hash@result, 2))
   # Argument verbose = 2 gives full transaction data
   # For some reason it doesn't give the fee: 
   # https://docs.bitcoincashnode.org/doc/json-rpc/getrawtransaction.html
@@ -86,7 +87,7 @@ fusions.df.files <- fusions.df.files[grepl("fusions_df_original_height_", fusion
 fusions.df <- readRDS(paste0( fusion.raw.data.dir,
   fusions.df.files[which.max(as.numeric(gsub("(fusions_df_original_height_)|([.]rds)", "", fusions.df.files)))]) )
 
-current.block.height <- rbtc::rpcpost(bch.config, "getblockchaininfo", list())@result$blocks
+current.block.height <- rbch::rpcpost(bch.config, "getblockchaininfo", list())@result$blocks
 
 
 
@@ -101,8 +102,8 @@ for (iter.block.height in last.updated.fusion.height:current.block.height) {
     cat(iter.block.height, base::date(), "\n")
   }
   
-  block.hash <- rbtc::rpcpost(bch.config, "getblockhash", list(iter.block.height))
-  block.data <- rbtc::rpcpost(bch.config, "getblock", list(block.hash@result, 2))
+  block.hash <- rbch::rpcpost(bch.config, "getblockhash", list(iter.block.height))
+  block.data <- rbch::rpcpost(bch.config, "getblock", list(block.hash@result, 2))
   # Argument verbose = 2 gives full transaction data
   # For some reason it doesn't give the fee: 
   # https://docs.bitcoincashnode.org/doc/json-rpc/getrawtransaction.html

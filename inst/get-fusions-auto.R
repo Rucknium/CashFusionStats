@@ -6,9 +6,10 @@
 
 while (TRUE) {
 
-# install.packages("rbtc")
-library(rbtc)
-bch.config <- rbtc::conrpc("~/config-files/bitcoin.conf")
+# install.packages("devtools")
+# devtools::install_github("Rucknium/rbch")
+library(rbch)
+bch.config <- rbch::conrpc("~/config-files/bitcoin.conf")
 # Path to bitcoind config file. The file must contain, at a minimum:
 # testnet=0
 # rpcuser=<userhere>
@@ -25,7 +26,7 @@ fusion.polished.data.dir <- "/srv/shiny-server/fusionstats/data/"
 
 fusions.df <- readRDS(paste0( fusion.polished.data.dir, "fusions_df.rds") )
 
-current.block.height <- rbtc::rpcpost(bch.config, "getblockchaininfo", list())@result$blocks
+current.block.height <- rbch::rpcpost(bch.config, "getblockchaininfo", list())@result$blocks
 
 last.updated.fusion.height <- max(fusions.df$block.height)
 
@@ -37,8 +38,8 @@ for (iter.block.height in last.updated.fusion.height:current.block.height) {
     cat(iter.block.height, base::date(), "\n")
   }
   
-  block.hash <- rbtc::rpcpost(bch.config, "getblockhash", list(iter.block.height))
-  block.data <- rbtc::rpcpost(bch.config, "getblock", list(block.hash@result, 2))
+  block.hash <- rbch::rpcpost(bch.config, "getblockhash", list(iter.block.height))
+  block.data <- rbch::rpcpost(bch.config, "getblock", list(block.hash@result, 2))
   # Argument verbose = 2 gives full transaction data
   # For some reason it doesn't give the fee: 
   # https://docs.bitcoincashnode.org/doc/json-rpc/getrawtransaction.html
