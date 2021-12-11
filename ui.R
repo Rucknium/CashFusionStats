@@ -22,6 +22,12 @@ ui <- shiny::navbarPage("CashFusion Stats",
   #  ), style="color:red;font-weight:bold;font-size:150%"),
     
     shiny::plotOutput("line_chart", height = "600px"),
+    shiny::br(),
+    shiny::br(),
+    
+    plotly::plotlyOutput("sankey"),
+    shiny::br(),
+    shiny::br(),
     
     #checkboxInput("fusion_friday", "Fusion Fridays!"),
     shiny::span(shinyWidgets::materialSwitch(

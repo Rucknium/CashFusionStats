@@ -27,11 +27,14 @@ server <- function(input, output, session) {
   
   fusions.df_fn <- shiny::reactiveFileReader(60000, session, 
     filePath = paste0(fusion.polished.data.dir, "fusions_df.rds"), readFunc = readRDS)
+  
+  graph.edgelist_fn <- shiny::reactiveFileReader(60000, session, 
+    filePath = paste0(fusion.polished.data.dir, "graph_edgelist.rds"), readFunc = readRDS)
 
   fusions.summary.ls <- shiny::reactive({fusions.summary.ls_fn() })
   fusions.date.agg <- shiny::reactive({fusions.date.agg_fn() })
   fusions.df <- shiny::reactive({fusions.df_fn() })
-
+  graph.edgelist <- shiny::reactive({graph.edgelist_fn() })
   
  # light <- bslib::bs_theme(bootswatch = "cerulean")
   #dark <- bslib::bs_theme(bg = "black", fg = "white", primary = "purple")
@@ -105,6 +108,48 @@ server <- function(input, output, session) {
       
     })
   }, input$line_plot_date_range, input$fusion_friday )
+  
+  
+  
+  output$sankey <- renderPlotly({
+    
+    graph.edgelist <- graph.edgelist()
+    factor.dict <- as.factor(c(graph.edgelist$source, graph.edgelist$target))
+    
+    fig <- plotly::plot_ly(
+      type = "sankey",
+      orientation = "h",
+      
+      node = list(
+        label  = levels(factor.dict),
+        color = ifelse(grepl("^bitcoincash", levels(factor.dict)), "green", "blue"),
+        pad = 15,
+        thickness = 20,
+        line = list(
+          color = "black",
+          width = 0.5
+        )
+      ),
+      
+      link = list(
+        source = unclass(factor(graph.edgelist$source, levels = levels(factor.dict) )),
+        target = unclass(factor(graph.edgelist$target, levels = levels(factor.dict) )),
+        value =  graph.edgelist$value
+      )
+    )
+    
+    fig <- plot_ly::layout(fig,
+      title = "Latest CashFusion transaction",
+      font = list(
+        size = 10,
+        color = "transparent"
+      )
+    )
+    
+    fig
+    
+  })
+  
   
   output$fusion_txs_table <- DT::renderDataTable({
     fusions.df()[, c("block.height", "block.time",  "txid.link", "value", 

@@ -56,7 +56,7 @@ for (iter.block.height in last.updated.fusion.height:current.block.height) {
   
   if ( ! any(fused.ind) ) { next }
   
-  fused.ls <- lapply(raw.txs.ls[fused.ind], FUN = function(x) {
+  fused.ls <- lapply(raw.txs.ls[fused.ind], FUN = function(x) { 
     txid <- x$txid
     n.inputs <- length(x$vin)
     n.outputs <- length(x$vout)
@@ -66,6 +66,12 @@ for (iter.block.height in last.updated.fusion.height:current.block.height) {
   })
   
   fused.df <- do.call(rbind, fused.ls)
+  fused.df$tx.fee <- NA
+  
+  for (tx.i in 1:nrow(fused.df)) {
+    fused.df$tx.fee[tx.i] <- rbch::txfee(bch.config, fused.df$txid[tx.i])
+  }
+  
   fused.df$block.height <- iter.block.height
   fused.df$block.time <- as.POSIXct(block.data@result$time,  origin = "1970-01-01", tz = "GMT")
   fused.update.ls[[iter.block.height]] <- fused.df
@@ -112,6 +118,68 @@ if (nrow(fused.update.df) > 0) {
   )
   
   saveRDS(fusions.summary.ls, file = paste0(fusion.polished.data.dir, "fusions_summary_ls.rds"), compress = FALSE)
+  
+  
+  
+  
+  latest.tx <- getrawtransaction(con, fusions.df$txid[1], verbose = TRUE)@result
+  
+  latest.tx <- raw.txs.ls[fused.ind][[1]]
+  
+  tx.inputs <- txinids(con, latest.tx$txid)
+  
+  tx.inputs <- split(tx.inputs$txinpos, tx.inputs$txinids)
+  
+  input.amounts <- vector("list", length(tx.inputs))
+  
+  for (i in seq_along(tx.inputs)) {
+    
+    tx.temp <- getrawtransaction(con, names(tx.inputs)[i], verbose = TRUE)@result$vout
+    
+    addresses <- vector("character", length(tx.inputs[[i]]))
+    
+    for (j in seq_along(tx.inputs[[i]])) {
+      extracted.address <- tx.temp[[ tx.inputs[[i]][j] ]]$scriptPubKey$addresses
+      stopifnot(length(extracted.address) == 1)
+      stopifnot(length(extracted.address[[1]]) == 1)
+      addresses[j] <- extracted.address[[1]]
+    }
+    
+    input.amounts[[i]] <- data.frame(addresses = addresses,
+      value = utxovalue(con, names(tx.inputs)[i])[ tx.inputs[[i]] ],
+      creating.tx = names(tx.inputs)[i],
+      stringsAsFactors = FALSE)
+    
+  }
+  
+  input.amounts <- do.call(rbind, input.amounts)
+  
+  
+  graph.edgelist <- with(input.amounts, {
+    rbind(data.frame(source = creating.tx, target = addresses, value = value),
+      data.frame(source = addresses, target = latest.tx$txid, value = value) )
+  } )
+  
+  
+  addresses <- vector("character", length(latest.tx$vout) - 1 )
+  value <- vector("numeric", length(latest.tx$vout) - 1 )
+  
+  for (j in seq_along(  latest.tx$vout  )[-1]  ) {  # Don't take the first output since it is an OP_RETURN
+    extracted.address <- latest.tx$vout[[j]]$scriptPubKey$addresses
+    stopifnot(length(extracted.address) == 1)
+    stopifnot(length(extracted.address[[1]]) == 1)
+    addresses[j] <- extracted.address[[1]]
+    
+    value[j] <- latest.tx$vout[[j]]$value
+  }
+  
+  
+  graph.edgelist <- rbind(graph.edgelist,
+    data.frame(source = latest.tx$txid, target = addresses, value = value)
+  )
+  
+  
+  saveRDS(graph.edgelist, file = paste0(fusion.polished.data.dir, "graph_edgelist.rds"), compress = FALSE)
   
 }
 

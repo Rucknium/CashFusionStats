@@ -58,6 +58,12 @@ for (iter.block.height in first.fusion.height:current.block.height) {
   })
   
   fused.df <- do.call(rbind, fused.ls)
+  fused.df$tx.fee <- NA
+  
+  for (tx.i in 1:nrow(fused.df)) {
+    fused.df$tx.fee[tx.i] <- rbch::txfee(bch.config, fused.df$txid[tx.i])
+  }
+  
   fused.df$block.height <- iter.block.height
   fused.df$block.time <- as.POSIXct(block.data@result$time,  origin = "1970-01-01", tz = "GMT")
   fused.all.ls[[iter.block.height]] <- fused.df
@@ -130,6 +136,12 @@ for (iter.block.height in last.updated.fusion.height:current.block.height) {
   })
   
   fused.df <- do.call(rbind, fused.ls)
+  fused.df$tx.fee <- NA
+  
+  for (tx.i in 1:nrow(fused.df)) {
+    fused.df$tx.fee[tx.i] <- rbch::txfee(bch.config, fused.df$txid[tx.i])
+  }
+  
   fused.df$block.height <- iter.block.height
   fused.df$block.time <- as.POSIXct(block.data@result$time,  origin = "1970-01-01", tz = "GMT")
   fused.update.ls[[iter.block.height]] <- fused.df
