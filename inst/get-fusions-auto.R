@@ -122,11 +122,11 @@ if (nrow(fused.update.df) > 0) {
   
   
   
-  latest.tx <- getrawtransaction(con, fusions.df$txid[1], verbose = TRUE)@result
+  latest.tx <- getrawtransaction(bch.config, fusions.df$txid[1], verbose = TRUE)@result
   
   latest.tx <- raw.txs.ls[fused.ind][[1]]
   
-  tx.inputs <- txinids(con, latest.tx$txid)
+  tx.inputs <- txinids(bch.config, latest.tx$txid)
   
   tx.inputs <- split(tx.inputs$txinpos, tx.inputs$txinids)
   
@@ -134,7 +134,7 @@ if (nrow(fused.update.df) > 0) {
   
   for (i in seq_along(tx.inputs)) {
     
-    tx.temp <- getrawtransaction(con, names(tx.inputs)[i], verbose = TRUE)@result$vout
+    tx.temp <- getrawtransaction(bch.config, names(tx.inputs)[i], verbose = TRUE)@result$vout
     
     addresses <- vector("character", length(tx.inputs[[i]]))
     
@@ -146,7 +146,7 @@ if (nrow(fused.update.df) > 0) {
     }
     
     input.amounts[[i]] <- data.frame(addresses = addresses,
-      value = utxovalue(con, names(tx.inputs)[i])[ tx.inputs[[i]] ],
+      value = utxovalue(bch.config, names(tx.inputs)[i])[ tx.inputs[[i]] ],
       creating.tx = names(tx.inputs)[i],
       stringsAsFactors = FALSE)
     
