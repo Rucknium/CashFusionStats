@@ -111,7 +111,7 @@ server <- function(input, output, session) {
   
   
   
-  output$sankey <- renderPlotly({
+  output$sankey <- plotly::renderPlotly({
     
     graph.edgelist <- graph.edgelist()
     factor.dict <- as.factor(c(graph.edgelist$source, graph.edgelist$target))
@@ -138,7 +138,7 @@ server <- function(input, output, session) {
       )
     )
     
-    fig <- plot_ly::layout(fig,
+    fig <- plotly::layout(fig,
       title = "Latest CashFusion transaction",
       font = list(
         size = 10,

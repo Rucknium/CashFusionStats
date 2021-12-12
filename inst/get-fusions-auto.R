@@ -124,8 +124,6 @@ if (nrow(fused.update.df) > 0) {
   
   latest.tx <- getrawtransaction(bch.config, fusions.df$txid[1], verbose = TRUE)@result
   
-  latest.tx <- raw.txs.ls[fused.ind][[1]]
-  
   tx.inputs <- txinids(bch.config, latest.tx$txid)
   
   tx.inputs <- split(tx.inputs$txinpos, tx.inputs$txinids)
