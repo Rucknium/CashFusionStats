@@ -25,9 +25,6 @@ ui <- shiny::navbarPage("CashFusion Stats",
     shiny::br(),
     shiny::br(),
     
-    plotly::plotlyOutput("sankey"),
-    shiny::br(),
-    shiny::br(),
     
     #checkboxInput("fusion_friday", "Fusion Fridays!"),
     shiny::span(shinyWidgets::materialSwitch(
@@ -47,6 +44,13 @@ ui <- shiny::navbarPage("CashFusion Stats",
       width = "100%"),
     shiny::br(),
     shiny::h5("👆 Move the sliders to zoom in on a time period. Click \"Fusion Fridays!\""),
+    
+    shiny::br(),
+    shiny::br(),
+    plotly::plotlyOutput("sankey"),
+    shiny::br(),
+    shiny::br(),
+    
     shiny::br(),
     shiny::br(),
     shiny::h6("👇 Click on column headers to sort the data table by column."),
