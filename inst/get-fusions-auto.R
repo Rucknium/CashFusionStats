@@ -166,9 +166,9 @@ if (nrow(fused.update.df) > 0) {
     extracted.address <- latest.tx$vout[[j]]$scriptPubKey$addresses
     stopifnot(length(extracted.address) == 1)
     stopifnot(length(extracted.address[[1]]) == 1)
-    addresses[j] <- extracted.address[[1]]
+    addresses[j - 1] <- extracted.address[[1]]
     
-    value[j] <- latest.tx$vout[[j]]$value
+    value[j - 1] <- latest.tx$vout[[j]]$value
   }
   
   
