@@ -132,8 +132,8 @@ server <- function(input, output, session) {
       ),
       
       link = list(
-        source = unclass(factor(graph.edgelist$source, levels = levels(factor.dict) )),
-        target = unclass(factor(graph.edgelist$target, levels = levels(factor.dict) )),
+        source = unclass(factor(graph.edgelist$source, levels = levels(factor.dict) )) - 1,
+        target = unclass(factor(graph.edgelist$target, levels = levels(factor.dict) )) - 1,
         value =  graph.edgelist$value
       )
     )
