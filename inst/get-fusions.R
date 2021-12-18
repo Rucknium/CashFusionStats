@@ -3,9 +3,11 @@
 # bitcoind MUST be running with the transaction index enabled:
 # Set txindex=1 in bitcoin.conf, or -txindex when invoking bitcoind on the command line
 
+# install.packages("future.apply")
 # install.packages("devtools")
 # devtools::install_github("Rucknium/rbch")
 library(rbch)
+library(future.apply)
 bch.config <- rbch::conrpc("~/.bitcoin/bitcoin.conf")
 # Path to bitcoind config file. The file must contain, at a minimum:
 # testnet=0
@@ -24,7 +26,12 @@ first.fusion.height <- 610700
 # This is a block found on Nov 26, 2019. Fusions started Nov 28, 2019.
 # Giving a little time buffer to be certain all fusions are captured.
 
-for (iter.block.height in first.fusion.height:current.block.height) {
+
+future::plan(multiprocess)
+
+# for (iter.block.height in first.fusion.height:current.block.height) {
+  
+fused.all.ls <- future.apply::future_lapply( first.fusion.height:(first.fusion.height + 1000), function(iter.block.height) {
   
   if (iter.block.height %% 1000 == 0) {
     cat(iter.block.height, base::date(), "\n")
@@ -46,7 +53,7 @@ for (iter.block.height in first.fusion.height:current.block.height) {
   }) 
   # "OP_RETURN 5920070" prefix indicates that the transaction is a CashFusion transaction
   
-  if ( ! any(fused.ind) ) { next }
+  if ( ! any(fused.ind) ) { return(NULL) }
   
   fused.ls <- lapply(raw.txs.ls[fused.ind], FUN = function(x) {
     txid <- x$txid
@@ -58,17 +65,19 @@ for (iter.block.height in first.fusion.height:current.block.height) {
   })
   
   fused.df <- do.call(rbind, fused.ls)
-  fused.df$tx.fee <- NA
+  #fused.df$tx.fee <- NA
   
-  for (tx.i in 1:nrow(fused.df)) {
-    fused.df$tx.fee[tx.i] <- rbch::txfee(bch.config, fused.df$txid[tx.i])
-  }
+  #for (tx.i in 1:nrow(fused.df)) {
+  #  fused.df$tx.fee[tx.i] <- rbch::txfee(bch.config, fused.df$txid[tx.i])
+  #}
   
   fused.df$block.height <- iter.block.height
   fused.df$block.time <- as.POSIXct(block.data@result$time,  origin = "1970-01-01", tz = "GMT")
-  fused.all.ls[[iter.block.height]] <- fused.df
+  #fused.all.ls[[iter.block.height]] <- fused.df
   
-}
+  fused.df
+  
+} )
 
 fused.all.df <- do.call(rbind, fused.all.ls)
 str(fused.all.df)
@@ -136,11 +145,11 @@ for (iter.block.height in last.updated.fusion.height:current.block.height) {
   })
   
   fused.df <- do.call(rbind, fused.ls)
-  fused.df$tx.fee <- NA
+  #fused.df$tx.fee <- NA
   
-  for (tx.i in 1:nrow(fused.df)) {
-    fused.df$tx.fee[tx.i] <- rbch::txfee(bch.config, fused.df$txid[tx.i])
-  }
+  #for (tx.i in 1:nrow(fused.df)) {
+  #  fused.df$tx.fee[tx.i] <- rbch::txfee(bch.config, fused.df$txid[tx.i])
+  #}
   
   fused.df$block.height <- iter.block.height
   fused.df$block.time <- as.POSIXct(block.data@result$time,  origin = "1970-01-01", tz = "GMT")
