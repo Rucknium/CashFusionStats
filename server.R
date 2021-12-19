@@ -93,7 +93,7 @@ server <- function(input, output, session) {
   }, input$line_plot_date_range, input$fusion_friday )
   
   output$fusion_txs_table <- DT::renderDataTable({
-    fusions.df[, c("block.height", "block.time",  "txid.link", "value", 
+    fusions.df[, c("block.height", "block.time",  "txid.link", "value", "tx.fee",
       "n.inputs", "n.outputs", "size", "txid", "block.time.orig",  "block.date" )]},
     # WARNING: If The above columns are changed, must also change "targets =" below
     rownames = FALSE,
@@ -101,7 +101,7 @@ server <- function(input, output, session) {
     escape = FALSE,
     style = "default",
     options = list(dom = "Blfrtip", buttons = I("colvis"), colReorder = list(realtime = FALSE),
-      columnDefs = list(list(targets = 8:10 - 1, visible = FALSE
+      columnDefs = list(list(targets = 9:11 - 1, visible = FALSE
       ))) )
 
   # https://rstudio.github.io/DT/extensions.html
