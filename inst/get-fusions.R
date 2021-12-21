@@ -3,9 +3,12 @@
 # bitcoind MUST be running with the transaction index enabled:
 # Set txindex=1 in bitcoin.conf, or -txindex when invoking bitcoind on the command line
 
-# install.packages("rbtc")
-library(rbtc)
-bch.config <- rbtc::conrpc("~/.bitcoin/bitcoin.conf")
+# install.packages("future.apply")
+# install.packages("devtools")
+# devtools::install_github("Rucknium/rbch")
+library(rbch)
+library(future.apply)
+bch.config <- rbch::conrpc("~/.bitcoin/bitcoin.conf")
 # Path to bitcoind config file. The file must contain, at a minimum:
 # testnet=0
 # rpcuser=<userhere>
@@ -15,7 +18,7 @@ bch.config <- rbtc::conrpc("~/.bitcoin/bitcoin.conf")
 # https://docs.bitcoincashnode.org/doc/json-rpc/getblock.html
 # https://docs.bitcoincashnode.org/doc/json-rpc/getrawtransaction.html
 
-current.block.height <- rbtc::rpcpost(bch.config, "getblockchaininfo", list())@result$blocks
+current.block.height <- rbch::getblockchaininfo(bch.config)@result$blocks
 # 698417
 fused.all.ls <- vector("list", length = current.block.height)
 
@@ -23,14 +26,19 @@ first.fusion.height <- 610700
 # This is a block found on Nov 26, 2019. Fusions started Nov 28, 2019.
 # Giving a little time buffer to be certain all fusions are captured.
 
-for (iter.block.height in first.fusion.height:current.block.height) {
+
+future::plan(multiprocess)
+  
+# for (iter.block.height in first.fusion.height:current.block.height) {
+#  system.time({
+fused.all.ls <- future.apply::future_lapply( first.fusion.height:current.block.height, function(iter.block.height) {
   
   if (iter.block.height %% 1000 == 0) {
     cat(iter.block.height, base::date(), "\n")
   }
   
-  block.hash <- rbtc::rpcpost(bch.config, "getblockhash", list(iter.block.height))
-  block.data <- rbtc::rpcpost(bch.config, "getblock", list(block.hash@result, 2))
+  block.hash <- rbch::getblockhash(bch.config, iter.block.height)
+  block.data <- rbch::getblock(bch.config, blockhash = block.hash@result, verbosity = "l2")
   # Argument verbose = 2 gives full transaction data
   # For some reason it doesn't give the fee: 
   # https://docs.bitcoincashnode.org/doc/json-rpc/getrawtransaction.html
@@ -45,7 +53,7 @@ for (iter.block.height in first.fusion.height:current.block.height) {
   }) 
   # "OP_RETURN 5920070" prefix indicates that the transaction is a CashFusion transaction
   
-  if ( ! any(fused.ind) ) { next }
+  if ( ! any(fused.ind) ) { return(NULL) }
   
   fused.ls <- lapply(raw.txs.ls[fused.ind], FUN = function(x) {
     txid <- x$txid
@@ -57,11 +65,20 @@ for (iter.block.height in first.fusion.height:current.block.height) {
   })
   
   fused.df <- do.call(rbind, fused.ls)
+  fused.df$tx.fee <- NA
+  
+  for (tx.i in 1:nrow(fused.df)) {
+    fused.df$tx.fee[tx.i] <- rbch::txfee(bch.config, fused.df$txid[tx.i])
+  }
+  
   fused.df$block.height <- iter.block.height
   fused.df$block.time <- as.POSIXct(block.data@result$time,  origin = "1970-01-01", tz = "GMT")
-  fused.all.ls[[iter.block.height]] <- fused.df
+  #fused.all.ls[[iter.block.height]] <- fused.df
   
-}
+  fused.df
+  
+} )
+#})
 
 fused.all.df <- do.call(rbind, fused.all.ls)
 str(fused.all.df)
@@ -86,7 +103,7 @@ fusions.df.files <- fusions.df.files[grepl("fusions_df_original_height_", fusion
 fusions.df <- readRDS(paste0( fusion.raw.data.dir,
   fusions.df.files[which.max(as.numeric(gsub("(fusions_df_original_height_)|([.]rds)", "", fusions.df.files)))]) )
 
-current.block.height <- rbtc::rpcpost(bch.config, "getblockchaininfo", list())@result$blocks
+current.block.height <- rbch::getblockchaininfo(bch.config)@result$blocks
 
 
 
@@ -101,8 +118,8 @@ for (iter.block.height in last.updated.fusion.height:current.block.height) {
     cat(iter.block.height, base::date(), "\n")
   }
   
-  block.hash <- rbtc::rpcpost(bch.config, "getblockhash", list(iter.block.height))
-  block.data <- rbtc::rpcpost(bch.config, "getblock", list(block.hash@result, 2))
+  block.hash <- rbch::getblockhash(bch.config, iter.block.height)
+  block.data <- rbch::getblock(bch.config, blockhash = block.hash@result, verbosity = "l2")
   # Argument verbose = 2 gives full transaction data
   # For some reason it doesn't give the fee: 
   # https://docs.bitcoincashnode.org/doc/json-rpc/getrawtransaction.html
@@ -129,6 +146,12 @@ for (iter.block.height in last.updated.fusion.height:current.block.height) {
   })
   
   fused.df <- do.call(rbind, fused.ls)
+  fused.df$tx.fee <- NA
+  
+  for (tx.i in 1:nrow(fused.df)) {
+    fused.df$tx.fee[tx.i] <- rbch::txfee(bch.config, fused.df$txid[tx.i])
+  }
+  
   fused.df$block.height <- iter.block.height
   fused.df$block.time <- as.POSIXct(block.data@result$time,  origin = "1970-01-01", tz = "GMT")
   fused.update.ls[[iter.block.height]] <- fused.df
