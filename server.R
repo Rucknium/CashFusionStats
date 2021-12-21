@@ -92,23 +92,18 @@ server <- function(input, output, session) {
     })
   }, input$line_plot_date_range, input$fusion_friday )
   
-  output$fusion_txs_table <- DT::renderDataTable(
-    DT::formatRound(
-      DT::datatable({
-        fusions.df[, c("block.height", "block.time",  "txid.link", "value", "tx.fee",
-          "n.inputs", "n.outputs", "size", "txid", "block.time.orig",  "block.date" )]},
-        # WARNING: If The above columns are changed, must also change "targets =" below
-        rownames = FALSE,
-        extensions = c("Buttons", "ColReorder"), 
-        escape = FALSE,
-        style = "default",
-        options = list(dom = "Blfrtip", buttons = I("colvis"), colReorder = list(realtime = FALSE),
-          columnDefs = list(list(targets = 9:11 - 1, visible = FALSE
-          ))) ),
-      columns = c(4, 5), digits = 8) )
-  # Round the numbers: 
-  # https://stackoverflow.com/questions/44305021/r-shiny-renderdatatable-show-two-decimal-places-and-center-align-all-data
-  
+  output$fusion_txs_table <- DT::renderDataTable({
+    fusions.df[, c("block.height", "block.time",  "txid.link", "value", 
+      "n.inputs", "n.outputs", "size", "txid", "block.time.orig",  "block.date" )]},
+    # WARNING: If The above columns are changed, must also change "targets =" below
+    rownames = FALSE,
+    extensions = c("Buttons", "ColReorder"), 
+    escape = FALSE,
+    style = "default",
+    options = list(dom = "Blfrtip", buttons = I("colvis"), colReorder = list(realtime = FALSE),
+      columnDefs = list(list(targets = 8:10 - 1, visible = FALSE
+      ))) )
+
   # https://rstudio.github.io/DT/extensions.html
   # https://stackoverflow.com/questions/28117556/clickable-links-in-shiny-datatable
   # https://github.com/rstudio/DT/issues/153
