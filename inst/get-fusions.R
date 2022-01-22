@@ -30,8 +30,8 @@ first.fusion.height <- 610700
 future::plan(multiprocess)
 
 # for (iter.block.height in first.fusion.height:current.block.height) {
-  
-fused.all.ls <- future.apply::future_lapply( first.fusion.height:(first.fusion.height + 1000), function(iter.block.height) {
+#  system.time({
+fused.all.ls <- future.apply::future_lapply( first.fusion.height:current.block.height, function(iter.block.height) {
   
   if (iter.block.height %% 1000 == 0) {
     cat(iter.block.height, base::date(), "\n")
@@ -65,11 +65,11 @@ fused.all.ls <- future.apply::future_lapply( first.fusion.height:(first.fusion.h
   })
   
   fused.df <- do.call(rbind, fused.ls)
-  #fused.df$tx.fee <- NA
+  fused.df$tx.fee <- NA
   
-  #for (tx.i in 1:nrow(fused.df)) {
-  #  fused.df$tx.fee[tx.i] <- rbch::txfee(bch.config, fused.df$txid[tx.i])
-  #}
+  for (tx.i in 1:nrow(fused.df)) {
+    fused.df$tx.fee[tx.i] <- rbch::txfee(bch.config, fused.df$txid[tx.i])
+  }
   
   fused.df$block.height <- iter.block.height
   fused.df$block.time <- as.POSIXct(block.data@result$time,  origin = "1970-01-01", tz = "GMT")
@@ -78,6 +78,7 @@ fused.all.ls <- future.apply::future_lapply( first.fusion.height:(first.fusion.h
   fused.df
   
 } )
+#})
 
 fused.all.df <- do.call(rbind, fused.all.ls)
 str(fused.all.df)
@@ -145,11 +146,11 @@ for (iter.block.height in last.updated.fusion.height:current.block.height) {
   })
   
   fused.df <- do.call(rbind, fused.ls)
-  #fused.df$tx.fee <- NA
+  fused.df$tx.fee <- NA
   
-  #for (tx.i in 1:nrow(fused.df)) {
-  #  fused.df$tx.fee[tx.i] <- rbch::txfee(bch.config, fused.df$txid[tx.i])
-  #}
+  for (tx.i in 1:nrow(fused.df)) {
+    fused.df$tx.fee[tx.i] <- rbch::txfee(bch.config, fused.df$txid[tx.i])
+  }
   
   fused.df$block.height <- iter.block.height
   fused.df$block.time <- as.POSIXct(block.data@result$time,  origin = "1970-01-01", tz = "GMT")
@@ -218,7 +219,7 @@ fusions.summary.ls <- list(
   n.bch = sum(fusions.df$value, na.rm = TRUE),
   full.release = as.POSIXct("2020-07-30", tz = "GMT")
   # https://github.com/Electron-Cash/Electron-Cash/releases/tag/4.1.0
-  )
+)
 
 saveRDS(fusions.summary.ls, file = paste0(fusion.polished.data.dir, "fusions_summary_ls.rds"), compress = FALSE)
 
