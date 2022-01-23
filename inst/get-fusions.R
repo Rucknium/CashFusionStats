@@ -84,6 +84,134 @@ fused.all.df <- do.call(rbind, fused.all.ls)
 str(fused.all.df)
 
 
+
+
+get.single.tx.graph <- function(con, txid) {
+  
+  latest.tx <- rbch::getrawtransaction(con, txid, verbose = TRUE)@result
+  
+  tx.inputs <- rbch::txinids(con, latest.tx$txid)
+  
+  tx.inputs <- split(tx.inputs$txinpos, tx.inputs$txinids)
+  
+  input.amounts <- vector("list", length(tx.inputs))
+  
+  for (i in seq_along(tx.inputs)) {
+    
+    tx.temp <- rbch::getrawtransaction(con, names(tx.inputs)[i], verbose = TRUE)@result$vout
+    
+    addresses <- vector("character", length(tx.inputs[[i]]))
+    
+    for (j in seq_along(tx.inputs[[i]])) {
+      extracted.address <- tx.temp[[ tx.inputs[[i]][j] ]]$scriptPubKey$addresses
+      stopifnot(length(extracted.address) == 1)
+      stopifnot(length(extracted.address[[1]]) == 1)
+      addresses[j] <- extracted.address[[1]]
+    }
+    
+    input.amounts[[i]] <- data.frame(addresses = addresses,
+      value = rbch::utxovalue(con, names(tx.inputs)[i])[ tx.inputs[[i]] ],
+      creating.tx = names(tx.inputs)[i],
+      stringsAsFactors = FALSE)
+    
+  }
+  
+  input.amounts <- do.call(rbind, input.amounts)
+  
+  
+  graph.edgelist <- with(input.amounts, {
+    rbind(data.frame(source = creating.tx, target = addresses, value = value),
+      data.frame(source = addresses, target = latest.tx$txid, value = value) )
+  } )
+  
+  
+  addresses <- vector("character", length(latest.tx$vout) - 1 )
+  value <- vector("numeric", length(latest.tx$vout) - 1 )
+  
+  for (j in seq_along(  latest.tx$vout  )  ) {  
+    if (latest.tx$vout[[j]]$scriptPubKey$type == "nulldata") {
+      addresses[j] <- "DELETE"
+      value[j] <- NA
+      # These are generally OP_RETURN outputs
+      next
+    }
+    extracted.address <- latest.tx$vout[[j]]$scriptPubKey$addresses
+    stopifnot(length(extracted.address) == 1)
+    stopifnot(length(extracted.address[[1]]) == 1)
+    addresses[j] <- extracted.address[[1]]
+    value[j] <- latest.tx$vout[[j]]$value
+  }
+  
+  addresses <- addresses[addresses != "DELETE"]
+  value <- value[! is.na(value)]
+  
+  
+  rbind(graph.edgelist,
+    data.frame(source = latest.tx$txid, target = addresses, value = value)
+  )
+  
+}
+
+
+
+
+
+fused.txids <- fused.all.df$txid
+
+fused.edgelists <- future.apply::future_lapply( fused.txids, function(fused.txid.iter) {
+  
+  zero.level <- get.single.tx.graph(bch.config, fused.txid.iter)
+  
+  backward.tx.spider <- unique(zero.level$source[ ! grepl("^bitcoincash", zero.level$source)])
+  fused.txids.backward <- intersect(backward.tx.spider, fused.txids)
+  backward.tx.spider <- setdiff(backward.tx.spider, fused.txids.backward)
+  
+  first.level.parent <- vector("list", length(backward.tx.spider))
+  
+  for (i in backward.tx.spider) {
+    first.level.parent[[i]] <- get.single.tx.graph(bch.config, i)
+  }
+  
+  if(length(first.level.parent) > 0) {
+    first.level.parent <- do.call(rbind, first.level.parent)
+  } else {
+    first.level.parent <- zero.level[FALSE, ]
+  }
+  
+  row.names(first.level.parent) <- NULL
+  
+  list(first.level.parent = 
+      list(edgelist = first.level.parent, fusions = fused.txids.backward),
+    zero.level = zero.level)
+  
+} )
+
+
+
+names(fused.edgelists) <- fused.txids
+
+for ( i in names(fused.edgelists)) {
+  
+  fusions.to.incorporate <- fused.edgelists[fused.edgelists[[i]]$first.level.parent$fusions]
+  
+  for (j in names(fusions.to.incorporate)) {
+    fusions.to.incorporate[[j]] <- fusions.to.incorporate[[j]]$zero.level
+  }
+  
+  fusions.to.incorporate <- do.call(rbind, fusions.to.incorporate)
+  row.names(fusions.to.incorporate) <- NULL
+  
+  fused.edgelists[[i]]$first.level.parent$edgelist <- rbind(
+    fused.edgelists[[i]]$first.level.parent$edgelist, fusions.to.incorporate
+  )
+  
+}
+
+
+
+
+
+
 # saveRDS(fused.all.df, file = "data/fusions_df_original.rds", compress = FALSE)
 
 
