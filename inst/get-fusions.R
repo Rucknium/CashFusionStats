@@ -284,19 +284,6 @@ for ( i in seq_along(fusion.child.records)) {
     }
   }
   
-  fusions.to.incorporate <- fused.edgelists[fused.edgelists[[i]]$first.level.parent$fusions]
-  
-  for (j in names(fusions.to.incorporate)) {
-    fusions.to.incorporate[[j]] <- fusions.to.incorporate[[j]]$zero.level
-  }
-  
-  fusions.to.incorporate <- do.call(rbind, fusions.to.incorporate)
-  row.names(fusions.to.incorporate) <- NULL
-  
-  fused.edgelists[[i]]$first.level.parent$edgelist <- rbind(
-    fused.edgelists[[i]]$first.level.parent$edgelist, fusions.to.incorporate
-  )
-  
 }
 
 
