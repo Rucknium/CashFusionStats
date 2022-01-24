@@ -113,7 +113,34 @@ server <- function(input, output, session) {
   
   output$sankey <- plotly::renderPlotly({
     
-    graph.edgelist <- graph.edgelist()
+    selected.fusions <- input$fusion_txs_table_rows_selected
+    
+    if (length(selected.fusions) == 0) {
+      fusion.tx.graph <- list( graph.edgelist() )
+    } else {
+      
+      selected.fusions.txid <- fusions.df()[selected.fusions, c("txid")]
+      
+      fusion.tx.graph <- lapply(selected.fusions.txid, FUN = function(x) {
+        readRDS(paste0(fusion.polished.data.dir, "fusion-tx-graphs/", x, ".rds"))
+      })
+      
+    }
+    
+    fusion.tx.graph <- lapply(fusion.tx.graph, FUN = function(x) {
+      graph <- list(x$zero_level)
+      if (input$sankey_parent) {
+        graph <- c(graph, x$first.level.parent$edgelist)
+      }
+      if (input$sankey_child) {
+        graph <- c(graph, x$first.level.child$edgelist)
+      }
+      do..call(rbind, graph)
+    })
+    
+    graph.edgelist <- unique(do.call(rbind, fusion.tx.graph))
+    
+    
     factor.dict <- as.factor(c(graph.edgelist$source, graph.edgelist$target))
     
     fig <- plotly::plot_ly(

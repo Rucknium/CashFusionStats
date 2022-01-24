@@ -50,6 +50,18 @@ ui <- shiny::navbarPage("CashFusion Stats",
     plotly::plotlyOutput("sankey"),
     shiny::br(),
     shiny::br(),
+    shiny::span(shinyWidgets::materialSwitch(
+      inputId = "sankey_parent",
+      label = "Show transactions before CashFusion", 
+      status = "primary",
+      right = TRUE
+    ), style="color:red;font-weight:bold;font-size:100%"),
+    shiny::span(shinyWidgets::materialSwitch(
+      inputId = "sankey_child",
+      label = "Show transactions after CashFusion", 
+      status = "primary",
+      right = TRUE
+    ), style="color:red;font-weight:bold;font-size:100%"),
     
     shiny::br(),
     shiny::br(),
