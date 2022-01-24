@@ -86,9 +86,11 @@ str(fused.all.df)
 
 
 
-get.single.tx.graph <- function(con, txid) {
+get.single.tx.graph <- function(con, txid, fusion = FALSE) {
   
   latest.tx <- rbch::getrawtransaction(con, txid, verbose = TRUE)@result
+  
+  block.height <- rbch::getblock(bch.config, blockhash = latest.tx$blockhash, verbosity = "l1")@result$height
   
   tx.inputs <- rbch::txinids(con, latest.tx$txid)
   
@@ -120,13 +122,15 @@ get.single.tx.graph <- function(con, txid) {
   
   
   graph.edgelist <- with(input.amounts, {
-    rbind(data.frame(source = creating.tx, target = addresses, value = value),
-      data.frame(source = addresses, target = latest.tx$txid, value = value) )
+    rbind(data.frame(source = creating.tx, target = addresses, 
+      value = value, block.height = block.height, fusion = fusion),
+      data.frame(source = addresses, target = latest.tx$txid, 
+        value = value, block.height = block.height, fusion = fusion) )
   } )
   
   
-  addresses <- vector("character", length(latest.tx$vout) - 1 )
-  value <- vector("numeric", length(latest.tx$vout) - 1 )
+  addresses <- vector("character", length(latest.tx$vout) )
+  value <- vector("numeric", length(latest.tx$vout) )
   
   for (j in seq_along(  latest.tx$vout  )  ) {  
     if (latest.tx$vout[[j]]$scriptPubKey$type == "nulldata") {
@@ -147,7 +151,8 @@ get.single.tx.graph <- function(con, txid) {
   
   
   rbind(graph.edgelist,
-    data.frame(source = latest.tx$txid, target = addresses, value = value)
+    data.frame(source = latest.tx$txid, target = addresses, value = value, 
+      block.height = block.height, fusion = fusion)
   )
   
 }
@@ -160,7 +165,7 @@ fused.txids <- fused.all.df$txid
 
 fused.edgelists <- future.apply::future_lapply( fused.txids, function(fused.txid.iter) {
   
-  zero.level <- get.single.tx.graph(bch.config, fused.txid.iter)
+  zero.level <- get.single.tx.graph(bch.config, fused.txid.iter, fusion = TRUE)
   
   backward.tx.spider <- unique(zero.level$source[ ! grepl("^bitcoincash", zero.level$source)])
   fused.txids.backward <- intersect(backward.tx.spider, fused.txids)
@@ -169,7 +174,7 @@ fused.edgelists <- future.apply::future_lapply( fused.txids, function(fused.txid
   first.level.parent <- vector("list", length(backward.tx.spider))
   
   for (i in backward.tx.spider) {
-    first.level.parent[[i]] <- get.single.tx.graph(bch.config, i)
+    first.level.parent[[i]] <- get.single.tx.graph(bch.config, i, fusion = FALSE)
   }
   
   if(length(first.level.parent) > 0) {
@@ -206,6 +211,91 @@ for ( i in names(fused.edgelists)) {
   )
   
 }
+
+
+
+fusion.child.records <- future.apply::future_lapply( first.fusion.height:current.block.height, function(iter.block.height) {
+  
+  if (iter.block.height %% 1000 == 0) {
+    cat(iter.block.height, base::date(), "\n")
+  }
+  
+  block.hash <- rbch::getblockhash(bch.config, iter.block.height)
+  block.data <- rbch::getblock(bch.config, blockhash = block.hash@result, verbosity = "l2")
+  
+  raw.txs.ls <- block.data@result$tx
+  
+  fusion.child.records <- lapply(raw.txs.ls, FUN = function(x) {
+
+    vin.txids <- vector("character", length(x$vin) )
+    
+    for (i in seq_along(x$vin)) {
+      vin.txids[[i]] <- x$vin[[i]]$txid
+    }
+    
+    if ( any(vin.txids %in% fused.txids)) {
+      if (x$txid %in% fused.txids) { 
+        return(list(fusion.record.insertion = intersect(vin.txids, fused.txids),
+          fusions = x$txid))
+      } else {
+        return(list(fusion.record.insertion = intersect(vin.txids, fused.txids),
+          edgelist = get.single.tx.graph(bch.config, x$txid, fusion = FALSE)))
+      }
+    } else {
+      return (NULL)
+    }
+  })
+  
+  fusion.child.records
+      
+} )
+
+
+first.level.child.empty <- fused.edgelists[[1]]$zero.level[FALSE, ]
+
+for ( i in seq_along(fused.edgelists)) {
+  fused.edgelists[[i]]$first.level.child <-
+    list(edgelist = first.level.child.empty, fusions = NULL)
+}
+
+
+for ( i in seq_along(fusion.child.records)) {
+  
+  if (is.null(fusion.child.records[[i]])) {next}
+  
+  for (j in seq_along(fusion.child.records[[i]])) {
+    
+    for (fusion.record.insertion in fusion.child.records[[i]][[j]]$fusion.record.insertion) {
+      
+      obj.to.modify <- fused.edgelists[[ fusion.record.insertion ]]$first.level.child
+      obj.to.insert <- fusion.child.records[[i]][[j]]
+
+      if (names(obj.to.modify) %in% "fusions") {
+        fused.edgelists[[ fusion.record.insertion ]]$first.level.child$fusions <-
+          c(obj.to.modify$fusions, obj.to.insert$fusions)
+      }
+      if (names(obj.to.modify) %in% "edgelist") {
+        fused.edgelists[[ fusion.record.insertion ]]$first.level.child$edgelist <-
+          rbind(obj.to.modify$edgelist, obj.to.insert$edgelist)
+      }
+    }
+  }
+  
+  fusions.to.incorporate <- fused.edgelists[fused.edgelists[[i]]$first.level.parent$fusions]
+  
+  for (j in names(fusions.to.incorporate)) {
+    fusions.to.incorporate[[j]] <- fusions.to.incorporate[[j]]$zero.level
+  }
+  
+  fusions.to.incorporate <- do.call(rbind, fusions.to.incorporate)
+  row.names(fusions.to.incorporate) <- NULL
+  
+  fused.edgelists[[i]]$first.level.parent$edgelist <- rbind(
+    fused.edgelists[[i]]$first.level.parent$edgelist, fusions.to.incorporate
+  )
+  
+}
+
 
 
 
