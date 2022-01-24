@@ -262,9 +262,9 @@ for ( i in seq_along(fused.edgelists)) {
 }
 
 
+fusion.child.records <- fusion.child.records[lengths(fusion.child.records) > 0]
+
 for ( i in seq_along(fusion.child.records)) {
-  
-  if (is.null(fusion.child.records[[i]])) {next}
   
   for (j in seq_along(fusion.child.records[[i]])) {
     
