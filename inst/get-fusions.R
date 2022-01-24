@@ -226,6 +226,8 @@ fusion.child.records <- future.apply::future_lapply( first.fusion.height:current
   raw.txs.ls <- block.data@result$tx
   
   fusion.child.records <- lapply(raw.txs.ls, FUN = function(x) {
+    
+    if (any(names(x$vin[[1]]) == "coinbase")) { return(NULL) }
 
     vin.txids <- vector("character", length(x$vin) )
     
@@ -246,9 +248,10 @@ fusion.child.records <- future.apply::future_lapply( first.fusion.height:current
     }
   })
   
-  fusion.child.records
+  fusion.child.records[lengths(fusion.child.records) > 0]
       
 } )
+
 
 
 first.level.child.empty <- fused.edgelists[[1]]$zero.level[FALSE, ]
