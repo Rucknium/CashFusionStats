@@ -226,6 +226,8 @@ fusion.child.records <- future.apply::future_lapply( first.fusion.height:current
   raw.txs.ls <- block.data@result$tx
   
   fusion.child.records <- lapply(raw.txs.ls, FUN = function(x) {
+    
+    if (any(names(x$vin[[1]]) == "coinbase")) { return(NULL) }
 
     vin.txids <- vector("character", length(x$vin) )
     
@@ -246,9 +248,10 @@ fusion.child.records <- future.apply::future_lapply( first.fusion.height:current
     }
   })
   
-  fusion.child.records
+  fusion.child.records[lengths(fusion.child.records) > 0]
       
 } )
+
 
 
 first.level.child.empty <- fused.edgelists[[1]]$zero.level[FALSE, ]
@@ -259,9 +262,9 @@ for ( i in seq_along(fused.edgelists)) {
 }
 
 
+fusion.child.records <- fusion.child.records[lengths(fusion.child.records) > 0]
+
 for ( i in seq_along(fusion.child.records)) {
-  
-  if (is.null(fusion.child.records[[i]])) {next}
   
   for (j in seq_along(fusion.child.records[[i]])) {
     
@@ -280,19 +283,6 @@ for ( i in seq_along(fusion.child.records)) {
       }
     }
   }
-  
-  fusions.to.incorporate <- fused.edgelists[fused.edgelists[[i]]$first.level.parent$fusions]
-  
-  for (j in names(fusions.to.incorporate)) {
-    fusions.to.incorporate[[j]] <- fusions.to.incorporate[[j]]$zero.level
-  }
-  
-  fusions.to.incorporate <- do.call(rbind, fusions.to.incorporate)
-  row.names(fusions.to.incorporate) <- NULL
-  
-  fused.edgelists[[i]]$first.level.parent$edgelist <- rbind(
-    fused.edgelists[[i]]$first.level.parent$edgelist, fusions.to.incorporate
-  )
   
 }
 
