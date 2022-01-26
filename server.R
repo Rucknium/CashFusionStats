@@ -136,6 +136,12 @@ server <- function(input, output, session) {
       if (input$sankey_child) {
         graph <- c(graph, list(x$first.level.child$edgelist))
       }
+      
+      graph <- lapply(graph, FUN = function(y) {
+        y$source <- as.character(y$source)
+        y$target <- as.character(y$target)
+        y
+      })
 
       do.call(rbind, graph)
     })
