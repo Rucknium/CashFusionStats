@@ -129,13 +129,14 @@ server <- function(input, output, session) {
     
     fusion.tx.graph <- lapply(fusion.tx.graph, FUN = function(x) {
       x <- x[[1]]
-      graph <- list(x$zero_level)
+      graph <- list(x$zero.level)
       if (input$sankey_parent) {
-        graph <- c(graph, x$first.level.parent$edgelist)
+        graph <- c(graph, list(x$first.level.parent$edgelist))
       }
       if (input$sankey_child) {
-        graph <- c(graph, x$first.level.child$edgelist)
+        graph <- c(graph, list(x$first.level.child$edgelist))
       }
+
       do.call(rbind, graph)
     })
     
