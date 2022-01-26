@@ -119,7 +119,7 @@ server <- function(input, output, session) {
       fusion.tx.graph <- list( graph.edgelist() )
     } else {
       
-      selected.fusions.txid <- fusions.df()[selected.fusions, c("txid")]
+      selected.fusions.txid <- fusions.df()[selected.fusions, "txid"]
       
       fusion.tx.graph <- lapply(selected.fusions.txid, FUN = function(x) {
         readRDS(paste0(fusion.polished.data.dir, "fusion-tx-graphs/", x, ".rds"))
@@ -128,6 +128,7 @@ server <- function(input, output, session) {
     }
     
     fusion.tx.graph <- lapply(fusion.tx.graph, FUN = function(x) {
+      x <- x[[1]]
       graph <- list(x$zero_level)
       if (input$sankey_parent) {
         graph <- c(graph, x$first.level.parent$edgelist)
