@@ -135,7 +135,7 @@ server <- function(input, output, session) {
       if (input$sankey_child) {
         graph <- c(graph, x$first.level.child$edgelist)
       }
-      do..call(rbind, graph)
+      do.call(rbind, graph)
     })
     
     graph.edgelist <- unique(do.call(rbind, fusion.tx.graph))
