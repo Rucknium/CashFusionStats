@@ -266,6 +266,10 @@ fusion.child.records <- fusion.child.records[lengths(fusion.child.records) > 0]
 
 for ( i in seq_along(fusion.child.records)) {
   
+  if (i %% 1000 == 0) {
+    cat(i, base::date(), "\n")
+  }
+  
   for (j in seq_along(fusion.child.records[[i]])) {
     
     for (fusion.record.insertion in fusion.child.records[[i]][[j]]$fusion.record.insertion) {
@@ -273,11 +277,11 @@ for ( i in seq_along(fusion.child.records)) {
       obj.to.modify <- fused.edgelists[[ fusion.record.insertion ]]$first.level.child
       obj.to.insert <- fusion.child.records[[i]][[j]]
 
-      if (names(obj.to.modify) %in% "fusions") {
+      if (any(names(obj.to.insert) %in% "fusions")) {
         fused.edgelists[[ fusion.record.insertion ]]$first.level.child$fusions <-
           c(obj.to.modify$fusions, obj.to.insert$fusions)
       }
-      if (names(obj.to.modify) %in% "edgelist") {
+      if (any(names(obj.to.insert) %in% "edgelist")) {
         fused.edgelists[[ fusion.record.insertion ]]$first.level.child$edgelist <-
           rbind(obj.to.modify$edgelist, obj.to.insert$edgelist)
       }
