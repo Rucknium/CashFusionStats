@@ -115,8 +115,19 @@ server <- function(input, output, session) {
     
     selected.fusions <- input$fusion_txs_table_rows_selected
     
+    
     if (length(selected.fusions) == 0) {
-      fusion.tx.graph <- list( graph.edgelist() )
+      fusion.tx.graph <- tryCatch(graph.edgelist(), error = function(x) {NULL})
+      if (!is.null(fusion.tx.graph)) {
+        fusion.tx.graph <- list( fusion.tx.graph )
+      } else {
+        selected.fusions.txid <- fusions.df()[1, "txid"]
+        
+        fusion.tx.graph <- lapply(selected.fusions.txid, FUN = function(x) {
+          readRDS(paste0(fusion.polished.data.dir, "fusion-tx-graphs/", x, ".rds"))
+        })
+      }
+      
     } else {
       
       selected.fusions.txid <- fusions.df()[selected.fusions, "txid"]
