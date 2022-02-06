@@ -81,26 +81,26 @@ server <- function(input, output, session) {
       polygon(c(min(fusions.date.agg.temp$Date) - 1, fusions.date.agg.temp$Date, max(fusions.date.agg.temp$Date) + 1), 
         c(-1, fusions.date.agg.temp$Freq, -1),
         border = NA
-        , col = "#1b98e0" # , xpd = TRUE
+        , col = "#467c9e" # "#1b98e0" # , xpd = TRUE
       )
       
       lines(fusions.date.agg.temp$Date, fusions.date.agg.temp$moving.average.7.day, lwd = 2, col = "black")
       legend("topleft", 
         legend = c("7-day moving average", "Official release date"),
-        col = c("black", "red"),
+        col = c("black", "#e63946"),
         lwd = c(2, 2),
         lty = c(1, 2))
       
-      abline(v = fusions.summary.ls()$full.release, col = "red", lwd = 2, lty = 2)
+      abline(v = fusions.summary.ls()$full.release, col = "#e63946", lwd = 2, lty = 2)
       
       if (input$fusion_friday) {
         fusions.date.agg.temp.friday <- fusions.date.agg.temp[lubridate::wday(fusions.date.agg.temp$Date) == 6, ]
-        points(fusions.date.agg.temp.friday$Date,  fusions.date.agg.temp.friday$Freq, col = "red", cex = 1.5) #, pch = ".")
+        points(fusions.date.agg.temp.friday$Date,  fusions.date.agg.temp.friday$Freq, col = "#e63946", cex = 1.5) #, pch = ".")
         
         mtext(paste("CashFusions/day overall mean: ",
           round(mean(fusions.date.agg.temp$Freq), digits = 1),
           " | Friday mean: ", round(mean(fusions.date.agg.temp.friday$Freq, na.rm = TRUE), digits = 1)
-        ), col = "red", line = 0.25)
+        ), col = "#e63946", line = 0.25)
         
       }
       
@@ -168,7 +168,7 @@ server <- function(input, output, session) {
       
       node = list(
         label  = levels(factor.dict),
-        color = ifelse(grepl("^bitcoincash", levels(factor.dict)), "green", "blue"),
+        color = ifelse(grepl("^bitcoincash", levels(factor.dict)), "#e63946", "#467c9e"),
         pad = 15,
         thickness = 20,
         line = list(
