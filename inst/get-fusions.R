@@ -27,171 +27,25 @@ first.fusion.height <- 610700
 # Giving a little time buffer to be certain all fusions are captured.
 
 
-future::plan(multiprocess)
+n.workers <- parallelly::availableCores()
+future::plan(future::multiprocess(workers = n.workers))
 
-# for (iter.block.height in first.fusion.height:current.block.height) {
-#  system.time({
-fused.all.ls <- future.apply::future_lapply( first.fusion.height:current.block.height, function(iter.block.height) {
-  
-  if (iter.block.height %% 1000 == 0) {
-    cat(iter.block.height, base::date(), "\n")
-  }
-  
-  block.hash <- rbch::getblockhash(bch.config, iter.block.height)
-  block.data <- rbch::getblock(bch.config, blockhash = block.hash@result, verbosity = "l2")
-  # Argument verbose = 2 gives full transaction data
-  # For some reason it doesn't give the fee: 
-  # https://docs.bitcoincashnode.org/doc/json-rpc/getrawtransaction.html
-  
-  raw.txs.ls <- block.data@result$tx
-  
-  fused.ind <- sapply(raw.txs.ls, FUN = function(x) {
-    ret <- x$vout[[1]]$scriptPubKey$asm
-    if (length(ret) == 0) { return(FALSE) }
-    ret <- substr(ret, 1, 17) == "OP_RETURN 5920070"
-    return(ret)
-  }) 
-  # "OP_RETURN 5920070" prefix indicates that the transaction is a CashFusion transaction
-  
-  if ( ! any(fused.ind) ) { return(NULL) }
-  
-  fused.ls <- lapply(raw.txs.ls[fused.ind], FUN = function(x) {
-    txid <- x$txid
-    n.inputs <- length(x$vin)
-    n.outputs <- length(x$vout)
-    value <- sum(sapply(x$vout, FUN = function(y) { y$value }) )
-    size <- x$size
-    data.frame(txid, n.inputs, n.outputs, value, size, stringsAsFactors = FALSE)
-  })
-  
-  fused.df <- do.call(rbind, fused.ls)
-  fused.df$tx.fee <- NA
-  
-  for (tx.i in 1:nrow(fused.df)) {
-    fused.df$tx.fee[tx.i] <- rbch::txfee(bch.config, fused.df$txid[tx.i])
-  }
-  
-  fused.df$block.height <- iter.block.height
-  fused.df$block.time <- as.POSIXct(block.data@result$time,  origin = "1970-01-01", tz = "GMT")
-  #fused.all.ls[[iter.block.height]] <- fused.df
-  
-  fused.df
-  
-} )
-#})
+options(stringsAsFactors = FALSE)
+fused.all.ls <- get.fused.all.future(first.fusion.height, current.block.height)
 
 fused.all.df <- do.call(rbind, fused.all.ls)
 str(fused.all.df)
-
-
-
-
-get.single.tx.graph <- function(con, txid, fusion = FALSE) {
-  
-  latest.tx <- rbch::getrawtransaction(con, txid, verbose = TRUE)@result
-  
-  block.height <- rbch::getblock(bch.config, blockhash = latest.tx$blockhash, verbosity = "l1")@result$height
-  
-  tx.inputs <- rbch::txinids(con, latest.tx$txid)
-  
-  tx.inputs <- split(tx.inputs$txinpos, tx.inputs$txinids)
-  
-  input.amounts <- vector("list", length(tx.inputs))
-  
-  for (i in seq_along(tx.inputs)) {
-    
-    tx.temp <- rbch::getrawtransaction(con, names(tx.inputs)[i], verbose = TRUE)@result$vout
-    
-    addresses <- vector("character", length(tx.inputs[[i]]))
-    
-    for (j in seq_along(tx.inputs[[i]])) {
-      extracted.address <- tx.temp[[ tx.inputs[[i]][j] ]]$scriptPubKey$addresses
-      stopifnot(length(extracted.address) == 1)
-      stopifnot(length(extracted.address[[1]]) == 1)
-      addresses[j] <- extracted.address[[1]]
-    }
-    
-    input.amounts[[i]] <- data.frame(addresses = addresses,
-      value = rbch::utxovalue(con, names(tx.inputs)[i])[ tx.inputs[[i]] ],
-      creating.tx = names(tx.inputs)[i],
-      stringsAsFactors = FALSE)
-    
-  }
-  
-  input.amounts <- do.call(rbind, input.amounts)
-  
-  
-  graph.edgelist <- with(input.amounts, {
-    rbind(data.frame(source = creating.tx, target = addresses, 
-      value = value, block.height = block.height, fusion = fusion),
-      data.frame(source = addresses, target = latest.tx$txid, 
-        value = value, block.height = block.height, fusion = fusion) )
-  } )
-  
-  
-  addresses <- vector("character", length(latest.tx$vout) )
-  value <- vector("numeric", length(latest.tx$vout) )
-  
-  for (j in seq_along(  latest.tx$vout  )  ) {  
-    if (latest.tx$vout[[j]]$scriptPubKey$type == "nulldata") {
-      addresses[j] <- "DELETE"
-      value[j] <- NA
-      # These are generally OP_RETURN outputs
-      next
-    }
-    extracted.address <- latest.tx$vout[[j]]$scriptPubKey$addresses
-    stopifnot(length(extracted.address) == 1)
-    stopifnot(length(extracted.address[[1]]) == 1)
-    addresses[j] <- extracted.address[[1]]
-    value[j] <- latest.tx$vout[[j]]$value
-  }
-  
-  addresses <- addresses[addresses != "DELETE"]
-  value <- value[! is.na(value)]
-  
-  
-  rbind(graph.edgelist,
-    data.frame(source = latest.tx$txid, target = addresses, value = value, 
-      block.height = block.height, fusion = fusion)
-  )
-  
-}
-
-
-
+rm(fused.all.ls)
 
 
 fused.txids <- fused.all.df$txid
 
-fused.edgelists <- future.apply::future_lapply( fused.txids, function(fused.txid.iter) {
-  
-  zero.level <- get.single.tx.graph(bch.config, fused.txid.iter, fusion = TRUE)
-  
-  backward.tx.spider <- unique(zero.level$source[ ! grepl("^bitcoincash", zero.level$source)])
-  fused.txids.backward <- intersect(backward.tx.spider, fused.txids)
-  backward.tx.spider <- setdiff(backward.tx.spider, fused.txids.backward)
-  
-  first.level.parent <- vector("list", length(backward.tx.spider))
-  
-  for (i in backward.tx.spider) {
-    first.level.parent[[i]] <- get.single.tx.graph(bch.config, i, fusion = FALSE)
-  }
-  
-  if(length(first.level.parent) > 0) {
-    first.level.parent <- do.call(rbind, first.level.parent)
-  } else {
-    first.level.parent <- zero.level[FALSE, ]
-  }
-  
-  row.names(first.level.parent) <- NULL
-  
-  list(first.level.parent = 
-      list(edgelist = first.level.parent, fusions = fused.txids.backward),
-    zero.level = zero.level)
-  
-} )
 
+n.workers <- parallelly::availableCores()
+future::plan(future::multiprocess(workers = n.workers))
 
+options(stringsAsFactors = FALSE)
+fused.edgelists <- get.fused.edgelists.future(fused.txids)
 
 names(fused.edgelists) <- fused.txids
 
