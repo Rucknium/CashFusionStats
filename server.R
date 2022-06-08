@@ -121,7 +121,9 @@ server <- function(input, output, session) {
         cf.utxo.set.stats.by.date.temp <- cf.utxo.set.stats.by.date()[, 
           c("block.date", input$line_plot_type)]
         
-        cf.utxo.set.stats.by.date.temp$block.date <- as.POSIXct(as.character(cf.utxo.set.stats.by.date.temp$block.date), tz = "GMT")
+        cf.utxo.set.stats.by.date.temp <- cf.utxo.set.stats.by.date.temp[
+          input$line_plot_date_range[1] <= as.Date(cf.utxo.set.stats.by.date.temp$block.date) & 
+            as.Date(cf.utxo.set.stats.by.date.temp$block.date) <= input$line_plot_date_range[2], ]
         
         par(mar = c(8, 4, 4, 2) + 0.1)
         # c(bottom, left, top, right)
@@ -151,13 +153,13 @@ server <- function(input, output, session) {
           max(cf.utxo.set.stats.by.date.temp$block.date) + 1), 
           c(-1, cf.utxo.set.stats.by.date.temp[, input$line_plot_type], -1),
           border = NA
-          , col = "#1b98e0" # , xpd = TRUE
+          , col = "#467c9e" # , xpd = TRUE
         )
         
         #lines(fusions.date.agg.temp$Date, fusions.date.agg.temp$moving.average.7.day, lwd = 2, col = "black")
         legend("topleft", 
           legend = c("Official release date"),
-          col = c("red"),
+          col = c("#e63946"),
           lwd = c(2),
           lty = c(2))
         
