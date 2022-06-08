@@ -119,7 +119,9 @@ server <- function(input, output, session) {
   
         
         cf.utxo.set.stats.by.date.temp <- cf.utxo.set.stats.by.date()[, 
-          c("block.date", input$line_plot_type), with = FALSE]
+          c("block.date", input$line_plot_type)]
+        
+        cf.utxo.set.stats.by.date.temp$block.date <- as.POSIXct(as.character(cf.utxo.set.stats.by.date.temp$block.date), tz = "GMT")
         
         par(mar = c(8, 4, 4, 2) + 0.1)
         # c(bottom, left, top, right)
@@ -131,7 +133,7 @@ server <- function(input, output, session) {
           "incoming.value.cumulative", "outgoing.value.cumulative", "outgoing.txs")
         
         plot(cf.utxo.set.stats.by.date.temp, type = "n",
-          ylim = c(0, max(cf.utxo.set.stats.by.date.temp[, input$line_plot_type, with = FALSE])),
+          ylim = c(0, max(cf.utxo.set.stats.by.date.temp[, input$line_plot_type])),
           xaxt = "n",
           main = choiceNames[choiceValues == input$line_plot_type],
           ylab = choiceNames[choiceValues == input$line_plot_type], xlab = "")
@@ -139,15 +141,15 @@ server <- function(input, output, session) {
         #axis.Date(1, format = "%Y-%m-%d")
         
         axis.POSIXct(1, at = seq(as.POSIXct( "2019-12-01", format = "%Y-%m-%d"), 
-          max(cf.utxo.set.stats.by.date.temp$Date), by = "1 mon"), 
+          max(cf.utxo.set.stats.by.date.temp$block.date), by = "1 mon"), 
           format = "%m/%Y", las = 2)
         # Is hard-coded as.POSIXct( "2019-12-01", format = "%Y-%m-%d")
         title(xlab = "Date", mgp = c(5.5, 1, 0))
         # "Note that mgp[1] affects title whereas mgp[2:3] affect axis. The default is c(3, 1, 0))"
         
-        polygon(c(min(cf.utxo.set.stats.by.date.temp$Date) - 1, cf.utxo.set.stats.by.date.temp$Date, 
-          max(cf.utxo.set.stats.by.date.temp$Date) + 1), 
-          c(-1, cf.utxo.set.stats.by.date.temp[, input$line_plot_type, with = FALSE], -1),
+        polygon(c(min(cf.utxo.set.stats.by.date.temp$block.date) - 1, cf.utxo.set.stats.by.date.temp$block.date, 
+          max(cf.utxo.set.stats.by.date.temp$block.date) + 1), 
+          c(-1, cf.utxo.set.stats.by.date.temp[, input$line_plot_type], -1),
           border = NA
           , col = "#1b98e0" # , xpd = TRUE
         )

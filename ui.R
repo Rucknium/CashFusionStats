@@ -47,7 +47,7 @@ ui <- shiny::fluidPage(title = "CashFusion Stats",
     right = TRUE
   ), style="color:#e63946;font-weight:bold;font-size:100%"),
   
-  sliderInput("line_plot_date_range",
+  shiny::sliderInput("line_plot_date_range",
     label = NULL,
     # label = "Zoom in on dates:",
     min = as.Date("2019-11-28","%Y-%m-%d") - 60,
