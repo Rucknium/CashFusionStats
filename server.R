@@ -61,9 +61,10 @@ server <- function(input, output, session) {
   
   output$line_chart <- shiny::bindCache( {
     
-    if (input$line_plot_type == "n.fusions") {
-    
     shiny::renderPlot({
+    
+    if (input$line_plot_type == "n.fusions") {
+      
       fusions.date.agg.temp <- fusions.date.agg()[
         input$line_plot_date_range[1] <= as.Date(fusions.date.agg()$Date) & 
           as.Date(fusions.date.agg()$Date) <= input$line_plot_date_range[2], ]
@@ -114,9 +115,8 @@ server <- function(input, output, session) {
       
       par(mar = c(5, 4, 4, 2) + 0.1) #, mgp = c(3, 1, 0))
       
-    }) } else {
-      
-      shiny::renderPlot({
+    } else {
+  
         
         cf.utxo.set.stats.by.date.temp <- cf.utxo.set.stats.by.date()[, 
           c("block.date", input$line_plot_type), with = FALSE]
@@ -163,11 +163,9 @@ server <- function(input, output, session) {
         
         par(mar = c(5, 4, 4, 2) + 0.1) #, mgp = c(3, 1, 0))
         
-      })
-      
-      
-      
     }
+    })
+      
   }, input$line_plot_date_range, input$fusion_friday, input$line_plot_type )
   
   
