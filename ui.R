@@ -27,6 +27,15 @@ ui <- shiny::navbarPage("CashFusion Stats",
     
     
     #checkboxInput("fusion_friday", "Fusion Fridays!"),
+    
+    shiny::radioButtons("line_plot_type",
+      label = "Choose Chart Type",
+      choiceNames = c("Number of CashFusions", "BCH in CashFusion UTXO \"pool\"",
+        "BCH coming into CashFusion UTXO \"pool\" (cumulative)", "BCH leaving CashFusion UTXO \"pool\" (cumulative)",
+        "Number of transactions spending from the CashFusion UTXO \"pool\""),
+      choiceValues = c("n.fusions", "value.stock",  
+        "incoming.value.cumulative", "outgoing.value.cumulative", "outgoing.txs")),
+    
     shiny::span(shinyWidgets::materialSwitch(
       inputId = "fusion_friday",
       label = "Fusion Fridays!", 
@@ -34,7 +43,7 @@ ui <- shiny::navbarPage("CashFusion Stats",
       right = TRUE
     ), style="color:red;font-weight:bold;font-size:100%"),
     
-    sliderInput("line_plot_date_range",
+    shiny::sliderInput("line_plot_date_range",
       label = NULL,
       # label = "Zoom in on dates:",
       min = as.Date("2019-11-28","%Y-%m-%d") - 60,

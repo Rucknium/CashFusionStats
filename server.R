@@ -30,11 +30,16 @@ server <- function(input, output, session) {
   
   graph.edgelist_fn <- shiny::reactiveFileReader(60000, session, 
     filePath = paste0(fusion.polished.data.dir, "graph_edgelist.rds"), readFunc = readRDS)
-
+  
+  cf.utxo.set.stats.by.date_fn <- shiny::reactiveFileReader(60000, session, 
+    filePath = paste0(fusion.polished.data.dir, "cf_utxo_set_stats_by_date.rds"), readFunc = readRDS)
+  
+  
   fusions.summary.ls <- shiny::reactive({fusions.summary.ls_fn() })
   fusions.date.agg <- shiny::reactive({fusions.date.agg_fn() })
   fusions.df <- shiny::reactive({fusions.df_fn() })
   graph.edgelist <- shiny::reactive({graph.edgelist_fn() })
+  cf.utxo.set.stats.by.date <- shiny::reactive({cf.utxo.set.stats.by.date_fn() })
   
  # light <- bslib::bs_theme(bootswatch = "cerulean")
   #dark <- bslib::bs_theme(bg = "black", fg = "white", primary = "purple")
@@ -55,6 +60,9 @@ server <- function(input, output, session) {
   })
   
   output$line_chart <- shiny::bindCache( {
+    
+    if (input$line_plot_type == "n.fusions") {
+    
     shiny::renderPlot({
       fusions.date.agg.temp <- fusions.date.agg()[
         input$line_plot_date_range[1] <= as.Date(fusions.date.agg()$Date) & 
@@ -106,8 +114,61 @@ server <- function(input, output, session) {
       
       par(mar = c(5, 4, 4, 2) + 0.1) #, mgp = c(3, 1, 0))
       
-    })
-  }, input$line_plot_date_range, input$fusion_friday )
+    }) } else {
+      
+      shiny::renderPlot({
+        
+        cf.utxo.set.stats.by.date.temp <- cf.utxo.set.stats.by.date()[, 
+          c("block.date", input$line_plot_type), with = FALSE]
+        
+        par(mar = c(8, 4, 4, 2) + 0.1)
+        # c(bottom, left, top, right)
+        
+        choiceNames = c("Number of CashFusions", "BCH in CashFusion UTXO \"pool\"",
+          "BCH coming into CashFusion UTXO \"pool\" (cumulative)", "BCH leaving CashFusion UTXO \"pool\" (cumulative)",
+          "Number of transactions spending from the CashFusion UTXO \"pool\"")
+        choiceValues = c("n.fusions", "value.stock",  
+          "incoming.value.cumulative", "outgoing.value.cumulative", "outgoing.txs")
+        
+        plot(cf.utxo.set.stats.by.date.temp, type = "n",
+          ylim = c(0, max(cf.utxo.set.stats.by.date.temp[, input$line_plot_type, with = FALSE])),
+          xaxt = "n",
+          main = choiceNames[choiceValues == input$line_plot_type],
+          ylab = choiceNames[choiceValues == input$line_plot_type], xlab = "")
+        
+        #axis.Date(1, format = "%Y-%m-%d")
+        
+        axis.POSIXct(1, at = seq(as.POSIXct( "2019-12-01", format = "%Y-%m-%d"), 
+          max(cf.utxo.set.stats.by.date.temp$Date), by = "1 mon"), 
+          format = "%m/%Y", las = 2)
+        # Is hard-coded as.POSIXct( "2019-12-01", format = "%Y-%m-%d")
+        title(xlab = "Date", mgp = c(5.5, 1, 0))
+        # "Note that mgp[1] affects title whereas mgp[2:3] affect axis. The default is c(3, 1, 0))"
+        
+        polygon(c(min(cf.utxo.set.stats.by.date.temp$Date) - 1, cf.utxo.set.stats.by.date.temp$Date, 
+          max(cf.utxo.set.stats.by.date.temp$Date) + 1), 
+          c(-1, cf.utxo.set.stats.by.date.temp[, input$line_plot_type, with = FALSE], -1),
+          border = NA
+          , col = "#1b98e0" # , xpd = TRUE
+        )
+        
+        #lines(fusions.date.agg.temp$Date, fusions.date.agg.temp$moving.average.7.day, lwd = 2, col = "black")
+        legend("topleft", 
+          legend = c("Official release date"),
+          col = c("red"),
+          lwd = c(2),
+          lty = c(2))
+        
+        abline(v = fusions.summary.ls()$full.release, col = "red", lwd = 2, lty = 2)
+        
+        par(mar = c(5, 4, 4, 2) + 0.1) #, mgp = c(3, 1, 0))
+        
+      })
+      
+      
+      
+    }
+  }, input$line_plot_date_range, input$fusion_friday, input$line_plot_type )
   
   
   
