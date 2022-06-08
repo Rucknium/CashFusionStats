@@ -89,26 +89,26 @@ server <- function(input, output, session) {
       polygon(c(min(fusions.date.agg.temp$Date) - 1, fusions.date.agg.temp$Date, max(fusions.date.agg.temp$Date) + 1), 
         c(-1, fusions.date.agg.temp$Freq, -1),
         border = NA
-        , col = "#1b98e0" # , xpd = TRUE
+        , col = "#467c9e" # "#1b98e0" # , xpd = TRUE
       )
       
       lines(fusions.date.agg.temp$Date, fusions.date.agg.temp$moving.average.7.day, lwd = 2, col = "black")
       legend("topleft", 
         legend = c("7-day moving average", "Official release date"),
-        col = c("black", "red"),
+        col = c("black", "#e63946"),
         lwd = c(2, 2),
         lty = c(1, 2))
       
-      abline(v = fusions.summary.ls()$full.release, col = "red", lwd = 2, lty = 2)
+      abline(v = fusions.summary.ls()$full.release, col = "#e63946", lwd = 2, lty = 2)
       
       if (input$fusion_friday) {
         fusions.date.agg.temp.friday <- fusions.date.agg.temp[lubridate::wday(fusions.date.agg.temp$Date) == 6, ]
-        points(fusions.date.agg.temp.friday$Date,  fusions.date.agg.temp.friday$Freq, col = "red", cex = 1.5) #, pch = ".")
+        points(fusions.date.agg.temp.friday$Date,  fusions.date.agg.temp.friday$Freq, col = "#e63946", cex = 1.5) #, pch = ".")
         
         mtext(paste("CashFusions/day overall mean: ",
           round(mean(fusions.date.agg.temp$Freq), digits = 1),
           " | Friday mean: ", round(mean(fusions.date.agg.temp.friday$Freq, na.rm = TRUE), digits = 1)
-        ), col = "red", line = 0.25)
+        ), col = "#e63946", line = 0.25)
         
       }
       
@@ -176,11 +176,22 @@ server <- function(input, output, session) {
     
     selected.fusions <- input$fusion_txs_table_rows_selected
     
+    
     if (length(selected.fusions) == 0) {
-      fusion.tx.graph <- list( graph.edgelist() )
+      fusion.tx.graph <- tryCatch(graph.edgelist(), error = function(x) {NULL})
+      if (!is.null(fusion.tx.graph)) {
+        fusion.tx.graph <- list( fusion.tx.graph )
+      } else {
+        selected.fusions.txid <- fusions.df()[1, "txid"]
+        
+        fusion.tx.graph <- lapply(selected.fusions.txid, FUN = function(x) {
+          readRDS(paste0(fusion.polished.data.dir, "fusion-tx-graphs/", x, ".rds"))
+        })
+      }
+      
     } else {
       
-      selected.fusions.txid <- fusions.df()[selected.fusions, c("txid")]
+      selected.fusions.txid <- fusions.df()[selected.fusions, "txid"]
       
       fusion.tx.graph <- lapply(selected.fusions.txid, FUN = function(x) {
         readRDS(paste0(fusion.polished.data.dir, "fusion-tx-graphs/", x, ".rds"))
@@ -189,14 +200,22 @@ server <- function(input, output, session) {
     }
     
     fusion.tx.graph <- lapply(fusion.tx.graph, FUN = function(x) {
-      graph <- list(x$zero_level)
+      x <- x[[1]]
+      graph <- list(x$zero.level)
       if (input$sankey_parent) {
-        graph <- c(graph, x$first.level.parent$edgelist)
+        graph <- c(graph, list(x$first.level.parent$edgelist))
       }
       if (input$sankey_child) {
-        graph <- c(graph, x$first.level.child$edgelist)
+        graph <- c(graph, list(x$first.level.child$edgelist))
       }
-      do..call(rbind, graph)
+      
+      graph <- lapply(graph, FUN = function(y) {
+        y$source <- as.character(y$source)
+        y$target <- as.character(y$target)
+        y
+      })
+
+      do.call(rbind, graph)
     })
     
     graph.edgelist <- unique(do.call(rbind, fusion.tx.graph))
@@ -210,7 +229,7 @@ server <- function(input, output, session) {
       
       node = list(
         label  = levels(factor.dict),
-        color = ifelse(grepl("^bitcoincash", levels(factor.dict)), "green", "blue"),
+        color = ifelse(grepl("^bitcoincash", levels(factor.dict)), "#e63946", "#467c9e"),
         pad = 15,
         thickness = 20,
         line = list(
